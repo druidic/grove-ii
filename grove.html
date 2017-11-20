@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style type="text/css">
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: #ddd;
+  background-color: #000;
+  font-family: sans-serif;
+}
+
+.terminal > p {
+  white-space: pre;
+  font-family: monospace;
+  font-size: 18px;
+  text-shadow: 0 0 2px rgba(97,255,220,0.5);
+  color: rgb(97,255,220);
+}
+
+.menu-button {
+  font-family: sans-serif;
+  font-size: 12px;
+  color: #ddd;
+  border: 1px solid #ddd;
+  display: inline-block;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.menu {
+  height: 30px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.modal-overlay {
+  position: absolute;
+  height: 100vh;
+  width: 100vw;
+  top: 0;
+  left: 0;
+  background-color: rgba(0,0,0,0.7);
+  display: none;
+}
+
+.modal-overlay.open {
+  display: block;
+}
+
+.modal {
+  width: 360px;
+  height: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: calc(50vh - 240px)
+}
+
+.modal .button {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.modal .button:hover,
+.menu-button:hover {
+  background-color: #222;
+}
+
+#file-input {
+  position: absolute;
+  top: -1000px;
+}
+
+    </style>
+  </head>
+
+  <body bgcolor="#000">
+    <div class="menu">
+      <div class="menu-button">
+        MENU
+      </div>
+    </div>
+
+    <canvas height="400" width="400"></canvas>
+
+    <div class="modal-overlay open">
+      <div class="modal">
+        <div class="button" id="insert-disk">
+          Insert Disk
+        </div>
+        <div class="button" id="eject-disk">
+          Eject Disk
+        </div>
+        <div class="button" id="go-back">
+          Go Back
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="file-input">
+
+    <script type="text/javascript">
+
+/**
+ * @DOM elements
+ */
+const overlay    = document.querySelector('.modal-overlay')
+const goBack     = document.getElementById('go-back')
+const menu       = document.querySelector('.menu-button')
+const fileInput  = document.getElementById('file-input')
+const insertDisk = document.getElementById('insert-disk')
+const canvas     = document.querySelector('canvas')
+
+/**
+ * @Graphics state
+ */
+const gfx = Graphics(canvas)
+
+/**
+ * @DOM event handlers
+ */
+goBack.addEventListener('click', function() {
+  overlay.classList.remove('open')
+})
+
+menu.addEventListener('click', function() {
+  overlay.classList.add('open')
+})
+
+insertDisk.addEventListener('click', function() {
+  fileInput.click()
+})
+
+fileInput.addEventListener('change', function(event) {
+  var file = event.target.files[0]
+  readFileAsDataURL(file, function(code) {
+    worker.terminate()
+    worker = new Worker(code)
+    worker.addEventListener('message', handleMessageFromWorker)
+  })
+})
+
+var worker = NullWorker()
+
+function handleMessageFromWorker(event) {
+  gfx.receiveCommand(event.data)
+}
+
+function NullWorker() {
+  return {
+    postMessage: function() {},
+    terminate: function() {}
+  }
+}
+
+// addEventListener('message', function(event) {
+//   if (event.data.route === 'GRAPHICS') {
+//     gfx.receiveCommand(event.data)
+//   }
+// })
+
+function onAnimationFrame() {
+  gfx.execNextCommand()
+  gfx.redraw()
+  requestAnimationFrame(onAnimationFrame)
+}
+requestAnimationFrame(onAnimationFrame)
+
+/**
+ * @File API
+ *
+ * readFileAsDataURL reads from a file object. The callback
+ * is called with the file's contents, encoded as a data URI
+ */
+function readFileAsDataURL(file, callback) {
+  var reader = new FileReader()
+  reader.addEventListener('load', function(event) {
+    callback(event.target.result)
+  })
+  reader.readAsDataURL(file)
+}
+
+/**
+ * @Graphics stuff
+ *
+ * The Graphics constructor creates an object that draws
+ * things on a canvas in response to queued commands. The
+ * fact that commands are in a queue allows animations to
+ * be created.
+ */
+function Graphics(canvas) {
+  const ctx = canvas.getContext('2d')
+
+  const queue = []
+  /* The queue of drawing commands */
+
+  const buffer = []
+  /* The screen buffer. This consists of 32 lines of 64
+   * characters each. Drawing commands update this buffer,
+   * which is then used to update the canvas on every frame.
+   */
+  for (let i = 0; i < 32; i++) {
+    buffer[i]
+      = '                                '
+      + '                                '
+  }
+
+  /* How persistently bright pixels will persist on screen
+   * after they're overdrawn with dark. Should be between
+   * 0 and 1. */
+  let persistence = 0
+
+  /* Public API declaration */
+  return {
+    receiveCommand,  // put a command object on the queue
+    execNextCommand, // execute the first queued command
+    redraw           // redraw the canvas
+  }
+
+  /* Function definitions below */
+
+  function receiveCommand(command) {
+    if (queue.length >= 1000) {
+      console.warn("Graphics queue is full. Ignoring command.")
+      return
+    }
+    queue.push(command)
+  }
+
+  function execNextCommand() {
+    const cmd = queue.shift()
+    if (!cmd) return
+    exec(cmd)
+  }
+
+  function redraw() {
+    /* blank out the screen */
+    ctx.fillStyle = 'rgba(0,0,0,' + (1 - persistence) + ')'
+    ctx.fillRect(0, 0, 400, 400)
+
+    /* draw the text */
+    ctx.fillStyle = 'rgb(97,255,220)'
+    ctx.font = '12pt monospace'
+    for (let i = 0; i < 32; i++) {
+      ctx.fillText(buffer[i], 0, 20 * i)
+    }
+  }
+
+  function exec(cmd) {
+    if (cmd.many) {
+      for (let subcmd of cmd.many) {
+        exec(subcmd)
+      }
+    } else {
+      if (cmd.action === 'blt') {
+        blt(cmd.top, cmd.left, cmd.text)
+      } else if (cmd.action === 'setPersistence') {
+        persistence = cmd.value
+      }
+    }
+  }
+
+  function blt(top, left, text) {
+    for (
+      let i = top;
+      i < buffer.length && i < top + text.length;
+      i++
+    ) {
+      buffer[i] = (buffer[i].slice(0, left)
+        + text[i - top]
+        + buffer[i].slice(left + text[i - top].length)
+      ).slice(0, 64)
+    }
+  }
+}
+
+// Graphics.queue = []
+// Graphics.handleMessage = function(message) {
+//   Graphics.queue.push(message)
+// }
+//
+// Graphics.blt = function(top, left, text) {
+//   var buf = Graphics.buffer
+//   for (
+//     var i = top;
+//     i < buf.length && i < top + text.length;
+//     i++
+//   ) {
+//     buf[i] = (buf[i].slice(0, left)
+//       + text[i - top]
+//       + buf[i].slice(left + text[i - top].length)
+//     ).slice(0, 64)
+//   }
+// }
+//
+// Graphics.drawNext = function() {
+//   var msg = Graphics.queue.shift()
+//   if (!msg) return
+//   if (msg.many) {
+//     for (var cmd of msg.many) {
+//       Graphics.blt(cmd.top, cmd.left, cmd.text)
+//     }
+//   } else {
+//     Graphics.blt(msg.top, msg.left, msg.text)
+//   }
+// }
+
+// function renderBufferOnCanvas() {
+//   var ctx = Graphics.ctx
+//   ctx.fillStyle = 'black'
+//   ctx.fillRect(0, 0, 400, 400)
+//   ctx.fillStyle = 'rgb(97,255,220)'
+//   ctx.font = '12pt monospace'
+//   for (var i = 0; i < 32; i++) {
+//     ctx.fillText(Graphics.buffer[i], 0, 20 * i)
+//   }
+// }
+//
+// function onAnimationFrame() {
+//   Graphics.drawNext()
+//   renderBufferOnCanvas()
+//   requestAnimationFrame(onAnimationFrame)
+// }
+//
+// requestAnimationFrame(onAnimationFrame)
+
+//grove_bFeb10_dywih.dsk
+//
+
+/*
+gen settings:
+
+C=bcdfghlmnrst
+D=aewouy
+E=nmlrstcdfg
+
+CDEED
+CDEDE
+*/
+
+    </script>
+  </body>
+</html>
