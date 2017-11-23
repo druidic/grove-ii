@@ -283,6 +283,177 @@ function Graphics(canvas) {
   }
 }
 
+/**
+ * @Graphics adapter
+ *
+ * This function gets redefined when this script runs
+ * in a Web Worker. Its intent is to provide a thin wrapper
+ * that abstracts away the distinction between graphics
+ * running in this thread and graphics running in another
+ * thread.
+ */
+function GraphicsAdapter() {
+  return {
+    clear,
+    output,
+    putCursor
+  }
+
+  function clear() {
+  }
+
+  function output() {
+  }
+
+  function putCursor() {
+  }
+}
+
+
+/**
+ * @Test framework
+ */
+
+const tests = []
+
+function describe(subject) {
+  return {
+    test
+  }
+
+  function test(fn) {
+    var failure = null
+    var description
+      = firstWordInFunction(subject)
+      + firstWordInFunction(fn)
+
+    function run() {
+      try {
+        fn()
+      } catch (e) {
+        failure = e
+      }
+    }
+
+    function getFailure() {
+      return failure
+    }
+
+    tests.push({
+      run: run,
+      description,
+      getFailure: getFailure
+    })
+  }
+
+  function firstWordInFunction(f) {
+    return f.toString()
+      .split('[^a-zA-Z0-9_]+')
+      .find(word => word !== 'function')
+  }
+}
+
+function runTests() {
+  tests.forEach(t => t.run())
+  var failure
+  if (failure = tests.find(t => t.getFailure())) {
+    var gfx = GraphicsAdapter()
+    gfx.clear()
+    gfx.putCursor(0, 0)
+    gfx.output(failure.toString())
+  }
+}
+
+function AppHarness(generatorFunc, apiFactory = TestApi) {
+  var api = null
+  var yielded = null
+  var done = false
+
+  return {
+    start,
+    enter
+  }
+
+  function start(initialState) {
+    api = apiFactory()
+    api.currentScreen = generatorFunc(initialState, api)
+    var next = api.currentScreen.next()
+    yielded = next.value
+    done = next.done
+  }
+
+  function enter(text) {
+    if (!api) {
+      throw 'Tried to enter text "'
+        + text
+        + '", but app is not running yet. '
+        + 'Call start() on the AppHarness first.'
+    }
+    if (yielded.for !== 'text entry') {
+      throw 'Tried to enter text "'
+        + text
+        + '", but app was expecting '
+        + yielded.describeExpected()
+        + ', not text entry'
+    }
+
+    api.answer = text
+    yielded = app()
+  }
+}
+
+function TestApi(appHarness) {
+  return {
+    ...Api(appHarness),
+    ...TestGraphicsAdapter()
+  }
+}
+
+/**
+ * @API
+ *
+ * The API is passed as the first arg to application
+ * functions, often with the name `$`:
+ *
+ * function *mainScreen($) {
+ *   $.output("What is your name?")
+ *   yield $.forTextEntry()
+ *   $.output("Hello, " + $.answer)
+ * }
+ */
+function Api() {
+  return {
+    /* properties for the app code to access directly */
+    currentScreen: null,
+    answer: null,
+    /* for use with yield */
+    forTextEntry,
+    forMillis,
+    ...GraphicsAdapter()
+  }
+
+  function forTextEntry() {
+    return {
+      for: 'text entry'
+    }
+  }
+
+  function forMillis(millis) {
+    return {
+      for: 'millis',
+      millis
+    }
+  }
+}
+
+function createUser() {
+  return {
+    currentScreen: null,
+    millisSinceAppStart: 0,
+    answer: null
+  }
+}
+
 // Graphics.queue = []
 // Graphics.handleMessage = function(message) {
 //   Graphics.queue.push(message)
