@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style type="text/css">
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body, input, textarea {
+  font-family: 'Courier', monospace;
+  font-size: 13px;
+}
+
+#container {
+  position: absolute;
+  width: 960px;
+  height: 600px;
+  background-color: beige;
+}
+
+#editor-pane {
+  background-color: #e47;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 480px;
+  height: 600px;
+}
+
+#cli-pane {
+  background-color: #99ff88;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 480px;
+  height: 600px;
+}
+
+textarea#editor {
+  height: 480px;
+  width: 480px;
+  border: 0;
+}
+
+.inset-border {
+  border-top: 3px solid gray;
+  border-left: 3px solid gray;
+  border-right: 3px solid lightgray;
+  border-bottom: 3px solid lightgray;
+}
+
+#log {
+  position: absolute;
+  height: 480px;
+  width: 480px;
+  background-color: silver;
+}
+
+#log-items {
+  position: absolute;
+  bottom: 0;
+  width: 474px;
+  max-height: 474px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#command-line {
+  position: absolute;
+  top: 480px;
+  height: 26px;
+  width: 480px;
+  color: #0e0;
+  background-color: black;
+  padding-left: 5px;
+}
+
+.paper {
+  white-space: pre;
+  overflow: hidden;
+  margin: 5px;
+  padding: 5px;
+  width: 450px;
+  background-color: #f0f0f0;
+}
+
+/*.paper:nth-child(even) {
+  background-color: #e0e0e0;
+}*/
+
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="editor-pane">
+        <textarea id="editor"></textarea>
+      </div>
+      <div id="cli-pane">
+        <div id="log" class="inset-border">
+          <div id="log-items">
+          </div>
+        </div>
+        <input id="command-line" class="inset-border" type="text">
+      </div>
+    </div>
+
+    <script type="text/javascript">
+
+const cliInput = document.getElementById('command-line')
+const logItemsElement = document.getElementById('log-items')
+
+// the HTML element we will append logs to.
+// if null, it means we will create a new element and
+// append logs to that.
+let currentLogElement = null
+
+cliInput.addEventListener('keydown', function(event) {
+  if (event.keyCode === 13) {
+    event.preventDefault()
+
+    if (programState === 'waitingForInput') {
+      appendToCurrentLog('> ' + cliInput.value)
+      programState = 'running'
+      program.next(cliInput.value)
+    } else {
+      appendToCurrentLog(cliInput.value)
+    }
+
+    cliInput.value = ''
+  }
+})
+
+function appendToCurrentLog(text, color='black') {
+  if (!currentLogElement) {
+    let newLogElement = document.createElement('div')
+    newLogElement.classList.add('paper')
+    logItemsElement.appendChild(newLogElement)
+    currentLogElement = newLogElement
+  } else {
+    currentLogElement.appendChild(document.createElement('br'))
+  }
+  let span = document.createElement('span')
+  span.style.color = color
+  span.innerText = text
+  currentLogElement.appendChild(span)
+  logItemsElement.scrollTop = 2147483647
+}
+
+function ask(text) {
+  appendToCurrentLog(text, '#a40')
+}
+
+function inform(text) {
+  appendToCurrentLog(text, '#00c')
+}
+
+function alert(text) {
+  appendToCurrentLog(text, '#f40')
+}
+
+function cutLog() {
+  currentLogElement = null
+}
+
+function sleep(seconds) {
+  programState = 'sleeping'
+  setTimeout(function() {
+    programState = 'running'
+    program.next()
+  }, seconds * 1000)
+}
+
+////////////////////////////////////////////////////////////
+// START OF MAIN PROGRAM
+////////////////////////////////////////////////////////////
+
+// the program is a generator function that yields
+// when it wants user input.
+const program = osMain()
+let programState = 'running'
+
+program.next()
+
+function getUserInput() {
+  if (programState !== 'running') {
+    throw 'You asked for user input, but it looks like the program is currently ' + programState + '. This probably means you forgot to `yield`.'
+  }
+
+  cliInput.focus()
+  programState = 'waitingForInput'
+}
+
+function *osMain() {
+  inform('Initializing GrumpyOS...')
+  yield sleep(1.5) // pretend to be working
+  cutLog()
+
+  mainLoop: while (true) {
+    ask('What do you want?')
+    ask('1: your money')
+    ask('2: your life')
+    ask('3: nothing, I guess')
+    getInput: while (true) {
+      switch (yield getUserInput()) {
+        case '1':
+          inform("Well, yah can't have it!")
+          break getInput
+        case '2':
+          inform("I'm not afraid a you!")
+          break getInput
+        case '3':
+          inform("Well whatcha flappin yer mouth for then?")
+          break getInput
+        case '4':
+          ask("Hey buddy, want to eval some JavaScript? [y/n]")
+          switch (yield getUserInput()) {
+            case 'y':
+              yield *evalJavaScriptTerminal()
+              break
+            case 'n':
+              inform('Okay then.')
+              break
+            default:
+              alert('Enter y or n.')
+          }
+          break getInput
+        default:
+          alert("Enter 1, 2, or 3.")
+          break
+      }
+    }
+    cutLog()
+    yield sleep(1)
+  }
+}
+
+function *evalJavaScriptTerminal() {
+  mainLoop: while (true) {
+    cutLog()
+    ask('Okay, enter a script to run')
+    let script = yield getUserInput()
+    try {
+      inform(eval(script))
+    } catch (e) {
+      alert('' + e)
+    }
+
+    ask('Yay, that was fun! Another? [y/n]')
+    while (true) {
+      switch (yield getUserInput()) {
+        case 'y': continue mainLoop
+        case 'n': break mainLoop
+        default: alert('Enter y or n.')
+      }
+    }
+  }
+
+
+}
+
+    </script>
+  </body>
+</html>
