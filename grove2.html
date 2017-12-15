@@ -120,11 +120,13 @@ const logItemsElement = document.getElementById('log-items')
 // if null, it means we will create a new element and
 // append logs to that.
 let currentLogElement = null
+let validTokensForInput = null
 
 cliInput.addEventListener('keydown', function(event) {
-  if (event.keyCode === 13) {
-    event.preventDefault()
+  console.log(event)
 
+  if (event.key === 'Enter') {
+    event.preventDefault()
     if (programState === 'waitingForInput') {
       appendToCurrentLog('> ' + cliInput.value)
       programState = 'running'
@@ -134,6 +136,13 @@ cliInput.addEventListener('keydown', function(event) {
     }
 
     cliInput.value = ''
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    if (programState === 'waitingForInput') {
+      programState = 'running'
+      program.throw('Canceled.')
+      cliInput.value = ''
+    }
   }
 })
 
@@ -188,7 +197,7 @@ let programState = 'running'
 
 program.next()
 
-function getUserInput() {
+function getUserInput(validTokens) {
   if (programState !== 'running') {
     throw 'You asked for user input, but it looks like the program is currently ' + programState + '. This probably means you forgot to `yield`.'
   }
@@ -197,18 +206,57 @@ function getUserInput() {
   programState = 'waitingForInput'
 }
 
+function *getUserInputIn(validTokens) {
+  if (typeof validTokens === 'string') {
+    validTokens = validTokens.split('')
+  }
+
+  if (validTokens) {
+    validTokensForInput = validTokens
+  }
+
+  getInput:
+  for (;;) {
+    let answer = yield getUserInput()
+    if (!validTokens.includes(answer)) {
+      alert('Please enter ' + conjunctivePhrase(validTokens))
+      continue getInput
+    }
+    return answer
+  }
+}
+
+function conjunctivePhrase(list) {
+  if (list.length <= 2) {
+    return list.join(' or ')
+  } else {
+    return list[0] + ', ' + conjunctivePhrase(list.slice(1))
+  }
+}
+
 function *osMain() {
   inform('Initializing GrumpyOS...')
-  yield sleep(1.5) // pretend to be working
+  yield sleep(1) // pretend to be working
   cutLog()
 
   mainLoop: while (true) {
+    try {
+      yield *doMainLoop()
+    } catch (e) {
+      alert('Something went wrong and the program crashed.')
+      alert('' + e)
+      cutLog()
+    }
+    yield sleep(0.6)
+  }
+
+  function *doMainLoop() {
     ask('What do you want?')
     ask('1: your money')
     ask('2: your life')
     ask('3: nothing, I guess')
     getInput: while (true) {
-      switch (yield getUserInput()) {
+      switch (yield *getUserInputIn('1234')) {
         case '1':
           inform("Well, yah can't have it!")
           break getInput
@@ -220,49 +268,51 @@ function *osMain() {
           break getInput
         case '4':
           ask("Hey buddy, want to eval some JavaScript? [y/n]")
-          switch (yield getUserInput()) {
+          switch (yield *getUserInputIn('yn')) {
             case 'y':
-              yield *evalJavaScriptTerminal()
+              yield *mode(evalJavaScriptTerminal)
               break
             case 'n':
               inform('Okay then.')
               break
-            default:
-              alert('Enter y or n.')
           }
           break getInput
-        default:
-          alert("Enter 1, 2, or 3.")
-          break
       }
     }
     cutLog()
-    yield sleep(1)
   }
 }
 
 function *evalJavaScriptTerminal() {
-  mainLoop: while (true) {
+  ask('Okay, enter a script to run (Press ESC to leave)')
+  yield *repeatUntilCanceled(getAndRunScript)
+  inform('Bye!')
+
+  function *getAndRunScript() {
     cutLog()
-    ask('Okay, enter a script to run')
     let script = yield getUserInput()
     try {
       inform(eval(script))
     } catch (e) {
       alert('' + e)
     }
-
-    ask('Yay, that was fun! Another? [y/n]')
-    while (true) {
-      switch (yield getUserInput()) {
-        case 'y': continue mainLoop
-        case 'n': break mainLoop
-        default: alert('Enter y or n.')
-      }
-    }
   }
+}
 
+function *mode(generator) {
+  try {
+    yield *generator()
+  } catch (canceled) {
+    alert(canceled)
+  }
+}
 
+function *repeatUntilCanceled(generator) {
+  try {
+    while (true) yield *generator()
+  } catch (canceled) {
+    alert(canceled)
+  }
 }
 
     </script>
