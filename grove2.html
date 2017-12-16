@@ -133,11 +133,11 @@ cliInput.addEventListener('keydown', function(event) {
   if (event.key === 'Enter') {
     event.preventDefault()
     if (programState === 'waitingForInput') {
-      appendToCurrentLog('> ' + cliInput.value)
+      log('> ' + cliInput.value)
       programState = 'running'
       program.next(cliInput.value)
     } else {
-      appendToCurrentLog(cliInput.value)
+      log(cliInput.value)
     }
 
     cliInput.value = ''
@@ -151,7 +151,11 @@ cliInput.addEventListener('keydown', function(event) {
   }
 })
 
-function appendToCurrentLog(text, color='black') {
+////////////////////////////////////////////////////////////
+// API FOR USER PROGRAMS
+////////////////////////////////////////////////////////////
+
+function log(text, color='black') {
   if (!currentLogElement) {
     let newLogElement = document.createElement('div')
     newLogElement.classList.add('paper')
@@ -168,15 +172,15 @@ function appendToCurrentLog(text, color='black') {
 }
 
 function ask(text) {
-  appendToCurrentLog(text, '#a40')
+  log(text, '#a40')
 }
 
 function inform(text) {
-  appendToCurrentLog(text, '#00c')
+  log(text, '#00c')
 }
 
 function alert(text) {
-  appendToCurrentLog(text, '#f40')
+  log(text, '#f40')
 }
 
 function cutLog() {
@@ -221,25 +225,6 @@ function initializeGlobals(initialValues) {
 // load the globals from the saved JSON
 initializeGlobals(JSON.parse(localStorage['state'] || '{}'))
 
-function globalsAsJson() {
-  let forJson = {}
-  for (let key in userGlobalNames) {
-    forJson[key] = window[key]
-  }
-  return JSON.stringify(forJson)
-}
-
-////////////////////////////////////////////////////////////
-// START OF MAIN PROGRAM
-////////////////////////////////////////////////////////////
-
-// the program is a generator function that yields
-// when it wants user input.
-const program = osMain()
-let programState = 'running'
-
-program.next()
-
 function getUserInput(validTokens) {
   if (programState !== 'running') {
     throw 'You asked for user input, but it looks like the program is currently ' + programState + '. This probably means you forgot to `yield`.'
@@ -269,6 +254,18 @@ function *getUserInputIn(validTokens) {
   return answer
 }}
 
+////////////////////////////////////////////////////////////
+// UTILITY FUNCTIONS
+////////////////////////////////////////////////////////////
+
+function globalsAsJson() {
+  let forJson = {}
+  for (let key in userGlobalNames) {
+    forJson[key] = window[key]
+  }
+  return JSON.stringify(forJson)
+}
+
 function conjunctivePhrase(list) {
   if (list.length <= 2) {
     return list.join(' or ')
@@ -276,6 +273,17 @@ function conjunctivePhrase(list) {
     return list[0] + ', ' + conjunctivePhrase(list.slice(1))
   }
 }
+
+////////////////////////////////////////////////////////////
+// START OF MAIN PROGRAM
+////////////////////////////////////////////////////////////
+
+// the program is a generator function that yields
+// when it wants user input.
+const program = osMain()
+let programState = 'running'
+
+program.next()
 
 function *osMain() {
   inform('Initializing GrumpyOS...')
