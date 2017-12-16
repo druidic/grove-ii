@@ -213,16 +213,16 @@ function *getUserInputIn(validTokens) {
     validTokensForInput = validTokens
   }
 
-  getInput:
-  for (;;) {
-    let answer = yield getUserInput()
-    if (!validTokens.includes(answer)) {
-      alert('Please enter ' + conjunctivePhrase(validTokens))
-      continue getInput
-    }
-    return answer
+  getInput: for (;;) {
+
+  let answer = yield getUserInput()
+  if (!validTokens.includes(answer)) {
+    alert('Please enter ' + conjunctivePhrase(validTokens))
+    continue getInput
   }
-}
+
+  return answer
+}}
 
 function conjunctivePhrase(list) {
   if (list.length <= 2) {
@@ -248,33 +248,37 @@ function *osMain() {
     ask('1: your money')
     ask('2: your life')
     ask('3: nothing, I guess')
-    getInput: while (true) {
-      switch (yield *getUserInputIn('12345')) {
-        case '1':
-          inform("Well, yah can't have it!")
-          break getInput
-        case '2':
-          inform("I'm not afraid a you!")
-          break getInput
-        case '3':
-          inform("Well whatcha flappin yer mouth for then?")
-          break getInput
-        case '4':
-          ask("Hey buddy, want to eval some JavaScript? [y/n]")
-          switch (yield *getUserInputIn('yn')) {
-            case 'y':
-              yield *mode(evalJavaScriptTerminal)
-              break
-            case 'n':
-              inform('Okay then.')
-              break
-          }
-          break getInput
-        case '5':
-          inform("Running your program starting from function `main`")
-          yield *mode(runUserProgram)
-          break getInput
+
+    parseInput:
+    switch (yield *getUserInputIn('12345')) {
+      case '1':
+      inform("Well, yah can't have it!")
+      break parseInput
+
+      case '2':
+      inform("I'm not afraid a you!")
+      break parseInput
+
+      case '3':
+      inform("Well whatcha flappin yer mouth for then?")
+      break parseInput
+
+      case '4':
+      ask("Hey buddy, want to eval some JavaScript? [y/n]")
+      switch (yield *getUserInputIn('yn')) {
+        case 'y':
+        yield *mode(evalJavaScriptTerminal)
+        break parseInput
+
+        case 'n':
+        inform('Okay then.')
+        break parseInput
       }
+
+      case '5':
+      inform("Running your program starting from function `main`")
+      yield *mode(runUserProgram)
+      break parseInput
     }
     cutLog()
   }
