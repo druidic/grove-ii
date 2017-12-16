@@ -238,18 +238,13 @@ function *osMain() {
   cutLog()
 
   mainLoop: while (true) {
-    try {
-      yield *doMainLoop()
-    } catch (e) {
-      alert('Something went wrong and the program crashed.')
-      alert('' + e)
-      cutLog()
-    }
+    yield *mode(doMainLoop)
+    cutLog()
     yield sleep(0.6)
   }
 
   function *doMainLoop() {
-    ask('What do you want?')
+    ask('What do you want??')
     ask('1: your money')
     ask('2: your life')
     ask('3: nothing, I guess')
