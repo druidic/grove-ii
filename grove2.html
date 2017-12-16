@@ -73,14 +73,29 @@ textarea#editor {
   overflow-x: hidden;
 }
 
-#command-line {
+#terminal {
   position: absolute;
   top: 480px;
-  height: 26px;
   width: 480px;
-  color: #0e0;
+  height: 52px;
   background-color: black;
+  color: goldenrod;
   padding-left: 5px;
+  white-space: pre-line;
+  line-height: 22px;
+}
+
+input#command-line {
+  border: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 474px;
+  padding-top: 20px;
+  color: #0e0;
+  background: transparent;
+  padding-left: 20.5px;
 }
 
 .paper {
@@ -108,7 +123,10 @@ textarea#editor {
           <div id="log-items">
           </div>
         </div>
-        <input id="command-line" class="inset-border" type="text">
+        <div id="terminal" class="inset-border"><span id="breadcrumbs"></span>
+          <input id="command-line" type="text">
+        </div>
+
       </div>
     </div>
 
@@ -275,6 +293,38 @@ function conjunctivePhrase(list) {
   }
 }
 
+const modeStack = []
+
+function pushMode(functionName) {
+  modeStack.push(functionName)
+  breadcrumbs.innerText = renderModeStack(modeStack)
+}
+
+function popMode() {
+  modeStack.pop()
+  breadcrumbs.innerText = renderModeStack(modeStack)
+}
+
+function renderModeStack(stack) {
+  let renderableStack = stack
+  let truncated = false
+  while (totalLength(renderableStack) > 50) {
+    truncated = true;
+    renderableStack = renderableStack.slice(1)
+  }
+  return (truncated ? '... ' : '') +
+    renderableStack
+      .filter(a => a)
+      .join(' > ') + '\n$'
+
+  function totalLength(segments) {
+    if (segments.length === 0) return 0
+
+    return ' > '.length * segments.length - 1
+      + segments.reduce((sum, seg) => sum + seg.length, 0)
+  }
+}
+
 ////////////////////////////////////////////////////////////
 // START OF MAIN PROGRAM
 ////////////////////////////////////////////////////////////
@@ -375,10 +425,12 @@ function initUserProgram() {
 
 function *mode(generator) {
   try {
+    pushMode(generator.name)
     yield *generator()
   } catch (canceled) {
     alert(canceled)
   }
+  popMode()
 }
 
 function *repeatUntilCanceled(generator) {
