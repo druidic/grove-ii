@@ -330,7 +330,10 @@ function *osMain() {
 }
 
 function *evalJavaScriptTerminal() {
-  ask('Okay, enter a script to run (Press ESC to leave)')
+  // ensure that any functions we might want to call exist
+  initUserProgram()
+
+  ask('Okay, enter some code to run (Press ESC to leave)')
   yield *repeatUntilCanceled(getAndRunScript)
   inform('Bye!')
 
@@ -346,8 +349,7 @@ function *evalJavaScriptTerminal() {
 }
 
 function *runUserProgram() {
-  let code = editor.value
-  new Function('program', code)(window)
+  initUserProgram()
   // assume the code defines a function like
   // program.main = function*() { ... }
   cutLog()
@@ -355,6 +357,11 @@ function *runUserProgram() {
   cutLog()
   save()
   inform("Program completed.")
+}
+
+function initUserProgram() {
+  let code = editor.value
+  new Function('program', code)(window)
 }
 
 function *mode(generator) {
