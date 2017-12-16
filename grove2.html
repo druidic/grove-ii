@@ -331,23 +331,21 @@ function renderModeStack(stack) {
 
 // the program is a generator function that yields
 // when it wants user input.
-const program = osMain()
+const program = Main__()
 let programState = 'running'
-
 program.next()
 
-function *osMain() {
+function *Main__() {
   inform('Initializing GrumpyOS...')
-  yield sleep(1) // pretend to be working
   cutLog()
 
   mainLoop: while (true) {
-    yield *mode(doMainLoop)
-    cutLog()
-    yield sleep(0.6)
+    yield *mode(Shell)
   }
 
-  function *doMainLoop() {
+  function *Shell() {
+    cutLog()
+    yield sleep(0.6)
     ask('What do you want??')
     ask('1: your money')
     ask('2: your life')
@@ -371,7 +369,7 @@ function *osMain() {
       ask("Hey buddy, want to eval some JavaScript? [y/n]")
       switch (yield *getUserInputIn('yn')) {
         case 'y':
-        yield *mode(evalJavaScriptTerminal)
+        yield *mode(JSPrompt)
         break parseInput
 
         case 'n':
@@ -381,14 +379,13 @@ function *osMain() {
 
       case '5':
       inform("Running your program starting from function `main`")
-      yield *mode(runUserProgram)
+      yield *mode(RunProgram)
       break parseInput
     }
-    cutLog()
   }
 }
 
-function *evalJavaScriptTerminal() {
+function *JSPrompt() {
   // ensure that any functions we might want to call exist
   initUserProgram()
 
@@ -407,7 +404,7 @@ function *evalJavaScriptTerminal() {
   }
 }
 
-function *runUserProgram() {
+function *RunProgram() {
   initUserProgram()
   // assume the code defines a function like
   // program.main = function*() { ... }
