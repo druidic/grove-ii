@@ -218,6 +218,12 @@ function save() {
   localStorage['state'] = globalsAsJson()
 }
 
+function help() {
+  let output = 'Available symbols:\n'
+    + Object.keys(userGlobalNames).sort().join('\n')
+  inform(output)
+}
+
 let userGlobalNames = {}
 function initializeGlobals(initialValues) {
   for (let key in userGlobalNames) {
@@ -229,7 +235,12 @@ function initializeGlobals(initialValues) {
   }
 
   for (let key in initialValues) {
-    if (!sameType(window[key], initialValues[key])) {
+    // if the type of the variable has changed, we need to
+    // reinitialize it. Reinitialize functions too, since
+    // they should be stateless and the programmer may have
+    // changed the function definition
+    if (typeof initialValues[key] === 'function'
+      || !sameType(window[key], initialValues[key])) {
       window[key] = initialValues[key]
       userGlobalNames[key] = true
     }
@@ -397,7 +408,10 @@ function *JSPrompt() {
     cutLog()
     let script = yield getUserInput()
     try {
-      inform(eval(script))
+      let result = eval(script)
+      if (typeof result !== 'undefined') {
+        inform(result)
+      }
     } catch (e) {
       alert('' + e)
     }
