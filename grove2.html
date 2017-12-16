@@ -123,8 +123,6 @@ let currentLogElement = null
 let validTokensForInput = null
 
 cliInput.addEventListener('keydown', function(event) {
-  console.log(event)
-
   if (event.key === 'Enter') {
     event.preventDefault()
     if (programState === 'waitingForInput') {
