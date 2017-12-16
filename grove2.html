@@ -126,7 +126,6 @@ let validTokensForInput = null
 editor.value = localStorage['file'] || ''
 
 editor.addEventListener('blur', function() {
-  console.log('blur')
   localStorage['file'] = editor.value
 })
 
