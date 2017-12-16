@@ -210,6 +210,9 @@ function cutLog() {
 function sleep(seconds) {
   programState = 'sleeping'
   setTimeout(function() {
+    // Sleep can be interrupted by the user, so if we're
+    // not sleeping when the timer goes off, do nothing.
+    if (programState !== 'sleeping') return
     programState = 'running'
     program.next()
   }, seconds * 1000)
