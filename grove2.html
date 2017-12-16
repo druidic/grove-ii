@@ -256,7 +256,7 @@ function *osMain() {
     ask('2: your life')
     ask('3: nothing, I guess')
     getInput: while (true) {
-      switch (yield *getUserInputIn('1234')) {
+      switch (yield *getUserInputIn('12345')) {
         case '1':
           inform("Well, yah can't have it!")
           break getInput
@@ -276,6 +276,10 @@ function *osMain() {
               inform('Okay then.')
               break
           }
+          break getInput
+        case '5':
+          inform("Running your program starting from function `main`")
+          yield *mode(runUserProgram)
           break getInput
       }
     }
@@ -297,6 +301,17 @@ function *evalJavaScriptTerminal() {
       alert('' + e)
     }
   }
+}
+
+function *runUserProgram() {
+  let code = editor.value
+  new Function('program', code)(window)
+  // assume the code defines a function like
+  // program.main = function*() { ... }
+  cutLog()
+  yield *mode(window.main)
+  cutLog()
+  inform("Program completed.")
 }
 
 function *mode(generator) {
