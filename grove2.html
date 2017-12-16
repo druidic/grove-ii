@@ -136,7 +136,7 @@ cliInput.addEventListener('keydown', function(event) {
     cliInput.value = ''
   } else if (event.key === 'Escape') {
     event.preventDefault()
-    if (programState === 'waitingForInput') {
+    if (programState !== 'running') {
       programState = 'running'
       program.throw('Canceled.')
       cliInput.value = ''
