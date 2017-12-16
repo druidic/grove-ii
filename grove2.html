@@ -123,6 +123,13 @@ const editor = document.getElementById('editor')
 let currentLogElement = null
 let validTokensForInput = null
 
+editor.value = localStorage['file'] || ''
+
+editor.addEventListener('blur', function() {
+  console.log('blur')
+  localStorage['file'] = editor.value
+})
+
 cliInput.addEventListener('keydown', function(event) {
   if (event.key === 'Enter') {
     event.preventDefault()
@@ -183,6 +190,44 @@ function sleep(seconds) {
     programState = 'running'
     program.next()
   }, seconds * 1000)
+}
+
+function save() {
+  localStorage['state'] = globalsAsJson()
+}
+
+let userGlobalNames = {}
+function initializeGlobals(initialValues) {
+  for (let key in userGlobalNames) {
+    if (!(key in initialValues)) {
+      // key has been removed from the program
+      delete window[key]
+      delete userGlobalNames[key]
+    }
+  }
+
+  for (let key in initialValues) {
+    if (!sameType(window[key], initialValues[key])) {
+      window[key] = initialValues[key]
+      userGlobalNames[key] = true
+    }
+  }
+
+  function sameType(a, b) {
+    var toS = Object.prototype.toString
+    return typeof a === typeof b && toS.call(a) === toS.call(b)
+  }
+}
+
+// load the globals from the saved JSON
+initializeGlobals(JSON.parse(localStorage['state'] || '{}'))
+
+function globalsAsJson() {
+  let forJson = {}
+  for (let key in userGlobalNames) {
+    forJson[key] = window[key]
+  }
+  return JSON.stringify(forJson)
 }
 
 ////////////////////////////////////////////////////////////
@@ -309,6 +354,7 @@ function *runUserProgram() {
   cutLog()
   yield *mode(window.main)
   cutLog()
+  save()
   inform("Program completed.")
 }
 
