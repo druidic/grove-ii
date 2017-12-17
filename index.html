@@ -73,7 +73,7 @@ input#import {
   position: absolute;
   height: 480px;
   width: 480px;
-  background-color: silver;
+  background-color: #aaa;
 }
 
 #log-items {
@@ -170,7 +170,7 @@ cliInput.addEventListener('keydown', function(event) {
   if (event.key === 'Enter') {
     event.preventDefault()
     if (programState === 'waitingForInput') {
-      log('> ' + cliInput.value)
+      log('$ ' + cliInput.value)
       programState = 'running'
       program.next(cliInput.value)
     } else {
@@ -212,10 +212,19 @@ importFileInput.addEventListener('change', function(event) {
 // API FOR USER PROGRAMS
 ////////////////////////////////////////////////////////////
 
-function log(text, color='black') {
+function interstitialLog(text, color) {
+  cutLog()
+  log(text, color, 'transparent')
+  cutLog()
+}
+
+function log(text, color='black', background) {
   if (!currentLogElement) {
     let newLogElement = document.createElement('div')
     newLogElement.classList.add('paper')
+    if (background) {
+      newLogElement.style.background = background
+    }
     logItemsElement.appendChild(newLogElement)
     currentLogElement = newLogElement
   } else {
@@ -373,12 +382,12 @@ const modeStack = []
 
 function pushMode(functionName) {
   modeStack.push(functionName)
-  breadcrumbs.innerText = renderModeStack(modeStack)
+  breadcrumbs.innerText = renderModeStack(modeStack) + '\n$'
 }
 
 function popMode() {
   modeStack.pop()
-  breadcrumbs.innerText = renderModeStack(modeStack)
+  breadcrumbs.innerText = renderModeStack(modeStack) + '\n$'
 }
 
 function renderModeStack(stack) {
@@ -391,7 +400,7 @@ function renderModeStack(stack) {
   return (truncated ? '... ' : '') +
     renderableStack
       .filter(a => a)
-      .join(' > ') + '\n$'
+      .join(' > ')
 
   function totalLength(segments) {
     if (segments.length === 0) return 0
@@ -497,11 +506,10 @@ function *RunProgram() {
   initUserProgram()
   // assume the code defines a function like
   // program.main = function*() { ... }
-  cutLog()
   yield *mode(window.main)
-  cutLog()
   save()
   inform("Program completed.")
+  cutLog()
 }
 
 function initUserProgram() {
@@ -512,11 +520,20 @@ function initUserProgram() {
 function *mode(generator) {
   try {
     pushMode(generator.name)
+    if (generator.name) {
+      interstitialLog('> ' + generator.name, '#afa')
+    }
     yield *generator()
   } catch (canceled) {
     alert(canceled)
   }
   popMode()
+  let namedStackFrames = modeStack.filter(a => a)
+  let returningTo = namedStackFrames[namedStackFrames.length - 1]
+  if (returningTo) {
+    interstitialLog('< ' + returningTo, '#afa')
+  }
+
 }
 
 function *repeatUntilCanceled(generator) {
