@@ -56,6 +56,12 @@ button#export {
   left: 10px;
 }
 
+input#import {
+  position: absolute;
+  top: 520px;
+  left: 10px;
+}
+
 .inset-border {
   border-top: 3px solid gray;
   border-left: 3px solid gray;
@@ -126,6 +132,7 @@ input#command-line {
         <textarea id="editor"></textarea>
       </div>
       <button id="export">Export to File</button>
+      <input type="file" id="import">
       <div id="cli-pane">
         <div id="log" class="inset-border">
           <div id="log-items">
@@ -145,6 +152,7 @@ const logItemsElement = document.getElementById('log-items')
 const editor = document.getElementById('editor')
 const breadcrumbs = document.getElementById('breadcrumbs')
 const exportButton = document.getElementById('export')
+const importFileInput = document.getElementById('import')
 
 // the HTML element we will append logs to.
 // if null, it means we will create a new element and
@@ -183,6 +191,19 @@ cliInput.addEventListener('keydown', function(event) {
 exportButton.addEventListener('click', function() {
   var blob = new Blob([localStorage['file']], {type: "text/plain;charset=utf-8"});
   saveAs(blob, 'save.txt')
+})
+
+importFileInput.addEventListener('change', function(event) {
+  let input = event.target
+  let reader = new FileReader()
+  reader.addEventListener('load', handleFileContents)
+  reader.readAsText(input.files[0])
+
+  function handleFileContents() {
+    let text = reader.result
+    localStorage['file'] = text
+    editor.value = text
+  }
 })
 
 ////////////////////////////////////////////////////////////
