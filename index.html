@@ -259,11 +259,27 @@ function save() {
   localStorage['state'] = globalsAsJson()
 }
 
-function help() {
-  let output = 'Available symbols:\n'
-    + Object.keys(userGlobalNames).sort().join('\n')
-  inform(output)
-}
+Object.defineProperty(window, 'help', {
+  get: function() {
+    let functions = Object.keys(userGlobalNames)
+      .filter(name => typeof window[name] === 'function')
+      .sort()
+
+    let variables = Object.keys(userGlobalNames)
+      .filter(name => typeof window[name] !== 'function')
+      .sort()
+
+    let output = 'AVAILABLE FUNCTIONS\n\n'
+      + functions.map(indent).join('\n')
+      + '\n\nAVAILABLE VARIABLES\n\n'
+      + variables.map(indent).join('\n')
+    inform(output)
+
+    function indent(s) {
+      return '  ' + s
+    }
+  }
+})
 
 let userGlobalNames = {}
 function initializeGlobals(initialValues) {
@@ -324,6 +340,14 @@ function *getUserInputIn(validTokens) {
 
   return answer
 }}
+
+function addHelpText(fn, text) {
+  Object.defineProperty(fn, 'help', {
+    get: function() {
+      inform(text)
+    }
+  })
+}
 
 ////////////////////////////////////////////////////////////
 // UTILITY FUNCTIONS
