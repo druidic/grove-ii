@@ -4,7 +4,7 @@ CACHE MANIFEST
 # If the version is not updated, offline users might see an
 # old version of the app.
 #
-# version 1
+# version 2
 
 CACHE:
 index.html
