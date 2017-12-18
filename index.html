@@ -167,14 +167,19 @@ editor.addEventListener('blur', function() {
 })
 
 cliInput.addEventListener('keydown', function(event) {
+  let input = cliInput.value
   if (event.key === 'Enter') {
     event.preventDefault()
-    if (programState === 'waitingForInput') {
-      log('$ ' + cliInput.value)
+
+    log('$ ' + input)
+
+    if (input.charAt(0) === ';') {
+      // if the line starts with the magic character ';',
+      // eval it as JavaScript
+      evalAndPrintResult(input.slice(1))
+    } else if (programState === 'waitingForInput') {
       programState = 'running'
-      program.next(cliInput.value)
-    } else {
-      log(cliInput.value)
+      program.next(input)
     }
 
     cliInput.value = ''
@@ -491,14 +496,18 @@ function *JSPrompt() {
   function *getAndRunScript() {
     cutLog()
     let script = yield getUserInput()
-    try {
-      let result = eval(script)
-      if (typeof result !== 'undefined') {
-        inform(result)
-      }
-    } catch (e) {
-      alert('' + e)
+    evalAndPrintResult(script)
+  }
+}
+
+function evalAndPrintResult(js) {
+  try {
+    let result = eval(js)
+    if (typeof result !== 'undefined') {
+      inform(result)
     }
+  } catch (e) {
+    alert('' + e)
   }
 }
 
