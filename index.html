@@ -501,6 +501,13 @@ function *mode(generator) {
   } catch (canceled) {
     alert(canceled)
   }
+
+  inform('Press ENTER to continue.')
+  try {
+    yield getUserInput()
+  } catch (canceled) {
+  }
+
   popMode()
   logPopPage()
   let namedStackFrames = modeStack.filter(a => a)
