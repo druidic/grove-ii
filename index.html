@@ -166,6 +166,7 @@ editor.value = localStorage['file'] || ''
 
 editor.addEventListener('blur', function() {
   localStorage['file'] = editor.value
+  initUserProgram()
 })
 
 cliInput.addEventListener('keydown', function(event) {
