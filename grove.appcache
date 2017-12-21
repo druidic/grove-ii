@@ -9,6 +9,7 @@ CACHE MANIFEST
 CACHE:
 index.html
 fileSaver.js
+log.js
 
 NETWORK:
 *

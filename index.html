@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8">
     <style type="text/css">
-
 body {
   margin: 0;
   padding: 0;
@@ -105,24 +104,31 @@ input#command-line {
   width: 474px;
   height: 47px;
   padding-top: 20px;
-  color: #0e0;
+  color: #fd6;
   background: transparent;
   padding-left: 20.5px;
   line-height: 20px;
 }
 
-.paper {
+.page {
   white-space: pre;
   overflow: hidden;
   margin: 5px;
   padding: 5px;
+  border-radius: 2px;
   width: 450px;
   background-color: #f0f0f0;
+  box-shadow: 0 1px 1px #444;
+  opacity: 0.7;
+  transition: opacity 200ms;
 }
 
-/*.paper:nth-child(even) {
-  background-color: #e0e0e0;
-}*/
+.page:last-child {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  opacity: 1;
+}
 
     </style>
   </head>
@@ -145,19 +151,15 @@ input#command-line {
     </div>
 
     <script type="text/javascript" src="./fileSaver.js"></script>
+    <script type="text/javascript" src="./log.js"></script>
     <script type="text/javascript">
 
 const cliInput = document.getElementById('command-line')
-const logItemsElement = document.getElementById('log-items')
 const editor = document.getElementById('editor')
 const breadcrumbs = document.getElementById('breadcrumbs')
 const exportButton = document.getElementById('export')
 const importFileInput = document.getElementById('import')
 
-// the HTML element we will append logs to.
-// if null, it means we will create a new element and
-// append logs to that.
-let currentLogElement = null
 let validTokensForInput = null
 
 editor.value = localStorage['file'] || ''
@@ -170,8 +172,6 @@ cliInput.addEventListener('keydown', function(event) {
   let input = cliInput.value
   if (event.key === 'Enter') {
     event.preventDefault()
-
-    log('$ ' + input)
 
     if (input.charAt(0) === ';') {
       // if the line starts with the magic character ';',
@@ -216,47 +216,6 @@ importFileInput.addEventListener('change', function(event) {
 ////////////////////////////////////////////////////////////
 // API FOR USER PROGRAMS
 ////////////////////////////////////////////////////////////
-
-function interstitialLog(text, color) {
-  cutLog()
-  log(text, color, 'transparent')
-  cutLog()
-}
-
-function log(text, color='black', background) {
-  if (!currentLogElement) {
-    let newLogElement = document.createElement('div')
-    newLogElement.classList.add('paper')
-    if (background) {
-      newLogElement.style.background = background
-    }
-    logItemsElement.appendChild(newLogElement)
-    currentLogElement = newLogElement
-  } else {
-    currentLogElement.appendChild(document.createElement('br'))
-  }
-  let span = document.createElement('span')
-  span.style.color = color
-  span.innerText = text
-  currentLogElement.appendChild(span)
-  logItemsElement.scrollTop = 2147483647
-}
-
-function ask(text) {
-  log(text, '#a40')
-}
-
-function inform(text) {
-  log(text, '#00c')
-}
-
-function alert(text) {
-  log(text, '#f40')
-}
-
-function cutLog() {
-  currentLogElement = null
-}
 
 function sleep(seconds) {
   programState = 'sleeping'
@@ -326,16 +285,17 @@ function initializeGlobals(initialValues) {
 // load the globals from the saved JSON
 initializeGlobals(JSON.parse(localStorage['state'] || '{}'))
 
-function getUserInput(validTokens) {
+function getUserInput(prompt) {
   if (programState !== 'running') {
     throw 'You asked for user input, but it looks like the program is currently ' + programState + '. This probably means you forgot to `yield`.'
   }
 
+  breadcrumbs.innerText = (prompt || '') + '\n$'
   cliInput.focus()
   programState = 'waitingForInput'
 }
 
-function *getUserInputIn(validTokens) {
+function *getUserInputIn(validTokens, prompt) {
   if (typeof validTokens === 'string') {
     validTokens = validTokens.split('')
   }
@@ -346,7 +306,7 @@ function *getUserInputIn(validTokens) {
 
   getInput: for (;;) {
 
-  let answer = yield getUserInput()
+  let answer = yield getUserInput(prompt)
   if (!validTokens.includes(answer)) {
     alert('Please enter ' + conjunctivePhrase(validTokens))
     continue getInput
@@ -426,6 +386,8 @@ let programState = 'running'
 program.next()
 
 function *Main__() {
+  logPushPage()
+
   inform('Loading MOSS, the Magical Operating System Simulacrum')
   cutLog()
   yield sleep(0.6)
@@ -456,10 +418,10 @@ load    Load a file from your computer
   function *Shell() {
     prompt: for (;;) {
 
-    ask(`Type a command and press ENTER`)
+    const PROMPT = 'Type a command and press ENTER'
 
     parseInput:
-    switch (yield *getUserInputIn(ALLOWED_COMMANDS)) {
+    switch (yield *getUserInputIn(ALLOWED_COMMANDS, PROMPT)) {
       case 'help':
       inform(HELP_TEXT)
       break parseInput
@@ -473,7 +435,6 @@ load    Load a file from your computer
       break parseInput
 
       case 'run':
-      inform("Running your program starting from function `main`")
       yield *mode(RunProgram)
       continue prompt
 
@@ -496,6 +457,7 @@ function *JSPrompt() {
   function *getAndRunScript() {
     cutLog()
     let script = yield getUserInput()
+    echo('> ' + script)
     evalAndPrintResult(script)
   }
 }
@@ -512,6 +474,7 @@ function evalAndPrintResult(js) {
 }
 
 function *RunProgram() {
+  inform("Running your program starting from function `main`")
   initUserProgram()
   // assume the code defines a function like
   // program.main = function*() { ... }
@@ -529,20 +492,17 @@ function initUserProgram() {
 function *mode(generator) {
   try {
     pushMode(generator.name)
+    logPushPage()
     if (generator.name) {
-      interstitialLog('> ' + generator.name, '#afa')
+      echo('> ' + generator.name + '\n')
     }
     yield *generator()
   } catch (canceled) {
     alert(canceled)
   }
   popMode()
+  logPopPage()
   let namedStackFrames = modeStack.filter(a => a)
-  let returningTo = namedStackFrames[namedStackFrames.length - 1]
-  if (returningTo) {
-    interstitialLog('< ' + returningTo, '#afa')
-  }
-
 }
 
 function *repeatUntilCanceled(generator) {
