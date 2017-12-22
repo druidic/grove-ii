@@ -160,6 +160,8 @@ const breadcrumbs = document.getElementById('breadcrumbs')
 const exportButton = document.getElementById('export')
 const importFileInput = document.getElementById('import')
 
+const CANCELED_MSG = 'Canceled by ESC.'
+
 let validTokensForInput = null
 
 editor.value = localStorage['file'] || ''
@@ -188,7 +190,7 @@ cliInput.addEventListener('keydown', function(event) {
     event.preventDefault()
     if (programState !== 'running') {
       programState = 'running'
-      program.throw('Canceled by ESC.')
+      program.throw(CANCELED_MSG)
       cliInput.value = ''
     }
   }
@@ -491,26 +493,29 @@ function initUserProgram() {
 }
 
 function *mode(generator) {
-  try {
-    pushMode(generator.name)
-    logPushPage()
-    if (generator.name) {
-      echo('> ' + generator.name + '\n')
-    }
-    yield *generator()
-  } catch (canceled) {
-    alert(canceled)
-  }
+  let error = null
+  let returnVal
+  pushMode(generator.name)
+  logPushPage()
+  if (generator.name) echo('> ' + generator.name + '\n')
 
-  inform('Press ENTER to continue.')
   try {
-    yield getUserInput()
-  } catch (canceled) {
+    returnVal = yield *generator()
+  } catch (_error) {
+    if (_error !== CANCELED_MSG) {
+      console.log(_error)
+      error = '' + _error
+    }
   }
 
   popMode()
   logPopPage()
-  let namedStackFrames = modeStack.filter(a => a)
+  if (error) alert(error)
+  if (exitMessage) {
+    inform(exitMessage)
+    exitMessage = null
+  }
+  return returnVal
 }
 
 function *repeatUntilCanceled(generator) {
@@ -519,6 +524,11 @@ function *repeatUntilCanceled(generator) {
   } catch (canceled) {
     alert(canceled)
   }
+}
+
+let exitMessage = null
+function exit(msg) {
+  exitMessage = msg
 }
 
     </script>
