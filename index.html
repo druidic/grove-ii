@@ -378,6 +378,13 @@ function renderModeStack(stack) {
   }
 }
 
+function inspect(object) {
+  if (typeof object === 'object') {
+    return JSON.stringify(object, true, 2)
+  }
+  return '' + object
+}
+
 ////////////////////////////////////////////////////////////
 // START OF MAIN PROGRAM
 ////////////////////////////////////////////////////////////
