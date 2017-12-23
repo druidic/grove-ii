@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html manifest="grove.appcache">
+<html>
   <head>
     <meta charset="UTF-8">
     <style type="text/css">
@@ -172,6 +172,17 @@ input#command-line {
 
     <script type="text/javascript" src="./fileSaver.js"></script>
     <script type="text/javascript" src="./log.js"></script>
+    <script type="text/javascript">
+
+navigator.serviceWorker.register('./caching-service-worker.js', {
+    scope: './'
+  }).then(function (reg) {
+    console.log('Service Worker registered successfully!')
+  }).catch(function (err) {
+    console.log('Service Worker failed to register', err)
+  })
+
+    </script>
     <script type="text/javascript">
 
 const cliInput = document.getElementById('command-line')
