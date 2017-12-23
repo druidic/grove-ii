@@ -84,6 +84,19 @@ input#import {
   overflow-x: hidden;
 }
 
+blockquote {
+  margin: 0;
+  padding: 6px;
+  border-left: 3px solid #aac;
+  background: #dde;
+}
+
+blockquote .attribution {
+  color: #88a;
+  font-size: 12px;
+  padding-bottom: 3px;
+}
+
 #terminal {
   position: absolute;
   top: 480px;
@@ -128,6 +141,13 @@ input#command-line {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   opacity: 1;
+}
+
+.page .title {
+  color: #0a0;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 3px;
+  padding-bottom: 3px;
 }
 
     </style>
@@ -221,6 +241,8 @@ importFileInput.addEventListener('change', function(event) {
 ////////////////////////////////////////////////////////////
 
 function sleep(seconds) {
+  assertYielded('tried to sleep')
+  flushLog()
   programState = 'sleeping'
   setTimeout(function() {
     // Sleep can be interrupted by the user, so if we're
@@ -289,13 +311,22 @@ function initializeGlobals(initialValues) {
 initializeGlobals(JSON.parse(localStorage['state'] || '{}'))
 
 function getUserInput(prompt) {
-  if (programState !== 'running') {
-    throw 'You asked for user input, but it looks like the program is currently ' + programState + '. This probably means you forgot to `yield`.'
-  }
+  assertYielded('asked for user input')
+  flushLog()
 
   breadcrumbs.innerText = (prompt || '') + '\n$'
   cliInput.focus()
   programState = 'waitingForInput'
+}
+
+function assertYielded(request) {
+  if (programState !== 'running') {
+    throw 'You ' + request
+      + ',\nbut it looks like the program is currently '
+      + programState
+      + '.\nThis probably means you forgot to `yield` '
+      + 'earlier in your program.'
+  }
 }
 
 function *getUserInputIn(validTokens, prompt) {
@@ -406,7 +437,14 @@ function *Main__() {
     'help', 'js', 'load', 'run', 'save'
   ]
 
-  const HELP_TEXT = `AVAILABLE COMMANDS
+  yield sleep(0.6)
+
+  mainLoop: while (true) {
+    yield *mode(Shell)
+  }
+
+  function *Shell() {
+    const HELP_TEXT = `AVAILABLE COMMANDS
 
 help    Show this text again
 js      Use JavaScript interactively
@@ -416,22 +454,14 @@ save    Save your work to a file, e.g. to move it to
         on every change)
 load    Load a file from your computer
 `
+    inform(HELP_TEXT)
 
-  inform(HELP_TEXT)
-
-  yield sleep(0.6)
-
-  mainLoop: while (true) {
-    yield *mode(Shell)
-  }
-
-  function *Shell() {
     prompt: for (;;) {
 
     const PROMPT = 'Type a command and press ENTER'
 
     parseInput:
-    switch (yield *getUserInputIn(ALLOWED_COMMANDS, PROMPT)) {
+    switch (echo(yield *getUserInputIn(ALLOWED_COMMANDS, PROMPT))) {
       case 'help':
       inform(HELP_TEXT)
       break parseInput
@@ -445,7 +475,7 @@ load    Load a file from your computer
       break parseInput
 
       case 'run':
-      yield *mode(RunProgram)
+      yield *RunProgram()
       continue prompt
 
       case 'save':
@@ -466,8 +496,7 @@ function *JSPrompt() {
 
   function *getAndRunScript() {
     cutLog()
-    let script = yield getUserInput()
-    echo('> ' + script)
+    let script = echo(yield getUserInput())
     evalAndPrintResult(script)
   }
 }
@@ -502,42 +531,37 @@ function initUserProgram() {
 function *mode(generator) {
   let error = null
   let returnVal
+  assertYielded('tried to enter a new mode')
+  flushLog()
   pushMode(generator.name)
-  logPushPage()
-  if (generator.name) echo('> ' + generator.name + '\n')
+  logPushPage(generator.name)
 
   try {
     returnVal = yield *generator()
-  } catch (_error) {
-    if (_error !== CANCELED_MSG) {
-      console.log(_error)
-      error = '' + _error
-    }
+  } catch (error) {
+    logBadExceptions(error)
   }
 
   popMode()
   logPopPage()
-  if (error) alert(error)
-  if (exitMessage) {
-    inform(exitMessage)
-    exitMessage = null
-  }
+  flushLogInBlockquote(generator.name)
   return returnVal
 }
 
 function *repeatUntilCanceled(generator) {
   try {
     while (true) yield *generator()
-  } catch (canceled) {
-    alert(canceled)
+  } catch (error) {
+    logBadExceptions(error)
   }
 }
 
-let exitMessage = null
-function exit(msg) {
-  exitMessage = msg
+function logBadExceptions(error) {
+  if (error !== CANCELED_MSG) {
+    alert(error)
+    console.log(error)
+  }
 }
-
     </script>
   </body>
 </html>

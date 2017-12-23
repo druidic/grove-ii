@@ -1,23 +1,49 @@
 const logItemsElement = document.getElementById('log-items')
+const unflushedLogs = []
 
 let pageStack = []
 
-function interstitialLog(text, color) {
-  cutLog()
-  log(text, color, 'transparent')
-  cutLog()
+function flushLog(toElement) {
+  if (!toElement) {
+    toElement = currentLogPage()
+    if (!toElement) return
+  }
+
+  unflushedLogs.forEach(log => {
+    let span = document.createElement('span')
+    span.style.color = log.color
+    span.innerText = log.text + '\n'
+    toElement.appendChild(span)
+  })
+
+  logItemsElement.scrollTop = 2147483647
+  unflushedLogs.length = 0
+}
+
+function flushLogInBlockquote(author) {
+  if (!unflushedLogs.length) return
+  let quote = createQuoteElement(author)
+  appendElementToLogPage(quote)
+  flushLog(quote)
+}
+
+function createQuoteElement(author) {
+  let quote = document.createElement('blockquote')
+  let attribution = document.createElement('div')
+  attribution.classList.add('attribution')
+  attribution.innerText = author + ' says:'
+  quote.appendChild(attribution)
+  return quote
+}
+
+function appendElementToLogPage(element) {
+  let page = currentLogPage()
+  if (!page) return
+  page.appendChild(element)
 }
 
 function log(text, color='black') {
-  if (!pageStack.length) return
-
-  let currentPage = pageStack[pageStack.length - 1]
-
-  let span = document.createElement('span')
-  span.style.color = color
-  span.innerText = text + '\n'
-  currentPage.appendChild(span)
-  logItemsElement.scrollTop = 2147483647
+  unflushedLogs.push({text, color})
 }
 
 function ask(text) {
@@ -29,7 +55,8 @@ function inform(text) {
 }
 
 function echo(text) {
-  log(text, '#d70')
+  log('$ ' + text, '#d70')
+  return text
 }
 
 function alert(text) {
@@ -40,9 +67,15 @@ function cutLog() {
   // deprecated
 }
 
-function logPushPage() {
+function logPushPage(title) {
   let page = document.createElement('div')
   page.classList.add('page')
+  if (title) {
+    let titleEl = document.createElement('div')
+    titleEl.classList.add('title')
+    titleEl.innerText = title
+    page.appendChild(titleEl)
+  }
   logItemsElement.appendChild(page)
   pageStack.push(page)
 }
@@ -61,4 +94,8 @@ function logPopPage() {
       clearInterval(interval)
     }
   }, 25)
+}
+
+function currentLogPage() {
+  return pageStack[pageStack.length - 1]
 }
