@@ -36,8 +36,10 @@ var version = 'Grove II Cache v1',
       './log.js'
     ];
 
+console.debug('Service worker cache version is ', version)
+
 self.addEventListener('install', function (event) {
-  console.log("installing");
+  console.debug("Installing service worker");
   // event.waitUntil will stop the flow till the Promise is resolved
   event.waitUntil(
     // opens cache
@@ -49,13 +51,13 @@ self.addEventListener('install', function (event) {
 });
 
 self.addEventListener('activate', function (event) {
-  console.log("activating");
+  console.debug("Activating service worker");
   event.waitUntil(
    caches.keys().then(function(cachedFiles) {
      return Promise.all(cachedFiles.map(function(cacheFile) {
        // everytime a cache version changes, old files are removed from cache
        if (cacheFile !== version) {
-         console.log('Removing Cached Files from Cache - ', cacheFile);
+         console.debug('Removing Cached Files from Cache - ', cacheFile);
          return caches.delete(cacheFile);
        }
      }));
@@ -65,7 +67,7 @@ self.addEventListener('activate', function (event) {
 
 
 self.addEventListener('fetch', function (event) {
-  console.log("fetching");
+  console.debug("Fetching from service worker");
   event.respondWith(
     fetch(event.request).catch(function() {
       return caches.match(event.request);
