@@ -199,6 +199,8 @@ editor.addEventListener('blur', function() {
   initUserProgram()
 })
 
+editor.getSession().on('changeMode', updateLinterOptions)
+
 cliInput.addEventListener('keydown', function(event) {
   let input = cliInput.value
   if (event.key === 'Enter') {
@@ -402,6 +404,27 @@ function inspect(object) {
     return JSON.stringify(object, true, 2)
   }
   return '' + object
+}
+
+function updateLinterOptions() {
+  let session = editor.getSession()
+  if (session.$worker &&
+      session.getMode().$id === "ace/mode/javascript") {
+    session.$worker.send("setOptions", [{
+      curly: true,
+      eqeqeq: true,
+      esversion: 6,
+      funcscope: false,
+      futurehostile: true,
+      latedef: 'nofunc',
+      nocomma: true,
+      notypeof: true,
+      varstmt: true,
+
+      // relaxing options
+      noyield: true,
+    }])
+  }
 }
 
 ////////////////////////////////////////////////////////////
