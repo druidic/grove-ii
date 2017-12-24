@@ -1,5 +1,7 @@
 const logItemsElement = document.getElementById('log-items')
 const unflushedLogs = []
+const newMessagesDivider = document.createElement('div')
+newMessagesDivider.classList.add('new-messages')
 
 let pageStack = []
 
@@ -85,19 +87,14 @@ function logPopPage() {
 
   let prevPage = pageStack[pageStack.length - 1]
   if (prevPage) {
-    let title = null
     for (let child of prevPage.children) {
-      if (child.classList.contains('title')) {
-        title = child
-        title.style.paddingTop = '1em'
-        title.style.borderBottom = '1px solid'
-        continue
+      if (!child.classList.contains('title')) {
+        // fade out old logs so new information is more
+        // prominent
+        child.style.opacity = 0.5
       }
-      // fade out old logs so new information is more
-      // prominent
-      child.style.opacity = 0.4
     }
-    if (title) prevPage.appendChild(title)
+    prevPage.appendChild(newMessagesDivider)
   }
 
   let currentHeight = page.offsetHeight
