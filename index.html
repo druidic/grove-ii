@@ -459,7 +459,8 @@ function *Main__() {
 
 help    Show this text again
 js      Use JavaScript interactively
-run     Run the current program
+run     Run the function named 'Main' as an interactive
+        program
 save    Save your work to a file, e.g. to move it to
         another computer (work is saved in the browser
         on every change)
@@ -524,11 +525,11 @@ function evalAndPrintResult(js) {
 }
 
 function *RunProgram() {
-  inform("Running your program starting from function `main`")
+  inform("Running your program starting from function `Main`")
   initUserProgram()
   // assume the code defines a function like
-  // program.main = function*() { ... }
-  yield *mode(window.main)
+  // function *Main() { ... }
+  yield *mode(window.Main)
   save()
   inform("Program completed.")
   cutLog()
@@ -536,7 +537,22 @@ function *RunProgram() {
 
 function initUserProgram() {
   let code = editor.value
+
+  code += ';' +
+    functionNames(code)
+      .map(putFunctionOnWindow)
+      .join(';')
+
   new Function('program', code)(window)
+
+  function putFunctionOnWindow(fname) {
+    return `if (typeof ${fname} === 'function') window['${fname}'] = ${fname}`
+  }
+
+  function functionNames(code) {
+    return code.match(/function\s*\*?\s*[a-zA-Z0-9_]+/g)
+      .map(match => match.replace(/function\s*\*?\s*/, ''))
+  }
 }
 
 function *mode(generator) {
