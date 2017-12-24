@@ -447,13 +447,12 @@ function *Main__() {
 
   inform('Loading MOSS, the Magical Operating System Simulacrum')
   cutLog()
-  yield sleep(0.6)
 
   const ALLOWED_COMMANDS = [
     'help', 'js', 'load', 'run', 'save'
   ]
 
-  yield sleep(0.6)
+  yield sleep(0.4)
 
   mainLoop: while (true) {
     yield *mode(Shell)
