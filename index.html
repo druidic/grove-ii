@@ -19,9 +19,9 @@ body, input, textarea {
 
 #container {
   position: absolute;
-  width: 960px;
+  width: 1024px;
   height: 600px;
-  background-color: beige;
+  background-color: #ddb;
 }
 
 #editor-pane {
@@ -29,36 +29,29 @@ body, input, textarea {
   position: absolute;
   top: 0;
   left: 0;
-  width: 480px;
+  width: 512px;
   height: 600px;
 }
 
 #cli-pane {
-  background-color: #99ff88;
+  background-color: #ddb;
   position: absolute;
   top: 0;
   right: 0;
-  width: 480px;
+  width: 512px;
   height: 600px;
 }
 
 #editor {
-  height: 480px;
-  width: 480px;
-  border: 0;
+  height: 600px;
+  width: 512px;
+  border: 1px solid gray;
   resize: none;
-}
-
-button#export {
-  position: absolute;
-  top: 490px;
-  left: 10px;
 }
 
 input#import {
   position: absolute;
-  top: 520px;
-  left: 10px;
+  top: -999px;
 }
 
 .inset-border {
@@ -70,16 +63,16 @@ input#import {
 
 #log {
   position: absolute;
-  height: 480px;
-  width: 480px;
+  height: 550px;
+  width: 512px;
   background-color: #aaa;
 }
 
 #log-items {
   position: absolute;
   bottom: 0;
-  width: 474px;
-  max-height: 474px;
+  width: 506px;
+  max-height: 506px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -100,7 +93,7 @@ blockquote .attribution {
 #terminal {
   position: absolute;
   top: 480px;
-  width: 480px;
+  width: 512px;
   height: 52px;
   background-color: black;
   color: goldenrod;
@@ -110,16 +103,15 @@ blockquote .attribution {
 }
 
 input#command-line {
-  border: none;
+  border-radius: 8px;
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 474px;
-  height: 47px;
-  padding-top: 20px;
+  top: 556px;
+  left: 6px;
+  height: 38px;
+  width: 500px;
   color: #fd6;
-  background: transparent;
-  padding-left: 20.5px;
+  background: black;
+  padding: 6px;
   line-height: 20px;
 }
 
@@ -129,7 +121,7 @@ input#command-line {
   margin: 5px;
   padding: 5px;
   border-radius: 2px;
-  width: 450px;
+  width: 482px;
   background-color: #f0f0f0;
   box-shadow: 0 1px 1px #444;
   opacity: 0.7;
@@ -157,16 +149,13 @@ input#command-line {
       <div id="editor-pane">
         <div id="editor"></div>
       </div>
-      <button id="export">Export to File</button>
       <input type="file" id="import">
       <div id="cli-pane">
         <div id="log" class="inset-border">
           <div id="log-items">
           </div>
         </div>
-        <div id="terminal" class="inset-border"><span id="breadcrumbs"></span>
-          <input id="command-line" type="text">
-        </div>
+        <input id="command-line" class="inset-border" type="text">
       </div>
     </div>
 
@@ -187,8 +176,6 @@ navigator.serviceWorker.register('./caching-service-worker.js', {
     <script type="text/javascript">
 
 const cliInput = document.getElementById('command-line')
-const breadcrumbs = document.getElementById('breadcrumbs')
-const exportButton = document.getElementById('export')
 const importFileInput = document.getElementById('import')
 const editor = ace.edit('editor')
 
@@ -230,8 +217,6 @@ cliInput.addEventListener('keydown', function(event) {
     }
   }
 })
-
-exportButton.addEventListener('click', exportToFile)
 
 function exportToFile() {
   var blob = new Blob([localStorage['file']], {type: "text/plain;charset=utf-8"});
@@ -329,7 +314,11 @@ function getUserInput(prompt) {
   assertYielded('asked for user input')
   flushLog()
 
-  breadcrumbs.innerText = (prompt || '') + '\n$'
+  let currentMode = modeStack[modeStack.length - 1]
+  let promptPrefix = ' '
+  promptPrefix += currentMode ? currentMode + ': ' : ''
+
+  cliInput.placeholder = promptPrefix + prompt
   cliInput.focus()
   programState = 'waitingForInput'
 }
@@ -396,32 +385,10 @@ const modeStack = []
 
 function pushMode(functionName) {
   modeStack.push(functionName)
-  breadcrumbs.innerText = renderModeStack(modeStack) + '\n$'
 }
 
 function popMode() {
   modeStack.pop()
-  breadcrumbs.innerText = renderModeStack(modeStack) + '\n$'
-}
-
-function renderModeStack(stack) {
-  let renderableStack = stack
-  let truncated = false
-  while (totalLength(renderableStack) > 50) {
-    truncated = true;
-    renderableStack = renderableStack.slice(1)
-  }
-  return (truncated ? '... ' : '') +
-    renderableStack
-      .filter(a => a)
-      .join(' > ')
-
-  function totalLength(segments) {
-    if (segments.length === 0) return 0
-
-    return ' > '.length * segments.length - 1
-      + segments.reduce((sum, seg) => sum + seg.length, 0)
-  }
 }
 
 function inspect(object) {
