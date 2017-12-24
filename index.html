@@ -543,7 +543,7 @@ function initUserProgram() {
       .map(putFunctionOnWindow)
       .join(';')
 
-  new Function('program', code)(window)
+  new Function(code)()
 
   function putFunctionOnWindow(fname) {
     return `if (typeof ${fname} === 'function') window['${fname}'] = ${fname}`
