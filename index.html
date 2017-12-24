@@ -42,7 +42,7 @@ body, input, textarea {
   height: 600px;
 }
 
-textarea#editor {
+#editor {
   height: 480px;
   width: 480px;
   border: 0;
@@ -155,7 +155,7 @@ input#command-line {
   <body>
     <div id="container">
       <div id="editor-pane">
-        <textarea id="editor"></textarea>
+        <div id="editor"></div>
       </div>
       <button id="export">Export to File</button>
       <input type="file" id="import">
@@ -170,6 +170,7 @@ input#command-line {
       </div>
     </div>
 
+    <script type="text/javascript" src="./ace.js"></script>
     <script type="text/javascript" src="./fileSaver.js"></script>
     <script type="text/javascript" src="./log.js"></script>
     <script type="text/javascript">
@@ -186,19 +187,22 @@ navigator.serviceWorker.register('./caching-service-worker.js', {
     <script type="text/javascript">
 
 const cliInput = document.getElementById('command-line')
-const editor = document.getElementById('editor')
 const breadcrumbs = document.getElementById('breadcrumbs')
 const exportButton = document.getElementById('export')
 const importFileInput = document.getElementById('import')
+const editor = ace.edit('editor')
 
 const CANCELED_MSG = 'Canceled by ESC.'
 
 let validTokensForInput = null
 
-editor.value = localStorage['file'] || ''
-
+editor.setTheme("ace/theme/xcode");
+editor.getSession().setMode("ace/mode/javascript");
+editor.getSession().setUseSoftTabs(false)
+editor.setValue(localStorage['file'] || '')
+editor.clearSelection()
 editor.addEventListener('blur', function() {
-  localStorage['file'] = editor.value
+  localStorage['file'] = editor.getValue()
   initUserProgram()
 })
 
@@ -243,7 +247,7 @@ importFileInput.addEventListener('change', function(event) {
   function handleFileContents() {
     let text = reader.result
     localStorage['file'] = text
-    editor.value = text
+    editor.setValue(text)
   }
 })
 
@@ -526,17 +530,23 @@ function evalAndPrintResult(js) {
 
 function *RunProgram() {
   inform("Running your program starting from function `Main`")
-  initUserProgram()
-  // assume the code defines a function like
-  // function *Main() { ... }
-  yield *mode(window.Main)
+  try {
+    initUserProgram()
+    // assume the code defines a function like
+    // function *Main() { ... }
+    yield *mode(window.Main)
+  } catch (e) {
+    alert(e)
+    console.log(e)
+  }
+
   save()
   inform("Program completed.")
   cutLog()
 }
 
 function initUserProgram() {
-  let code = editor.value
+  let code = editor.getValue()
 
   code += ';' +
     functionNames(code)
