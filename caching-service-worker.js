@@ -25,13 +25,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-var version = 'Grove II Cache v1',
+var version = 'Grove II Cache v2',
     filesToCache = [
       // HTML
       './index.html',
 
       // JS
       './caching-service-worker.js',
+      './editor.js'
+      './files.js'
       './fileSaver.js',
       './log.js'
     ];
