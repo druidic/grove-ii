@@ -9,7 +9,18 @@ Files.memory = {}
   // public functions
   //////////////////////////////////////////////////////////
 
+  Files.eject = function() {
+    Files.memory = null
+    localStorage[LOCAL_STORAGE_KEY] = ''
+  }
+
+  Files.diskLoaded = function() {
+    return !!localStorage[LOCAL_STORAGE_KEY]
+  }
+
   Files.set = function(name, content) {
+    if (!Files.diskLoaded()) throw 'No filesystem loaded'
+
     if (!Files.memory[name]) {
       Files.memory[name] = {metadata: {filename: name}}
     }
@@ -18,6 +29,8 @@ Files.memory = {}
   }
 
   Files.get = function(name) {
+    if (!Files.diskLoaded()) throw 'No filesystem loaded 2 '
+
     if (Files.memory[name]) {
       return Files.memory[name].content
     }
@@ -25,6 +38,8 @@ Files.memory = {}
   }
 
   Files.writeToDisk = function() {
+    if (!Files.diskLoaded()) throw 'No filesystem loaded3 '
+
     var blob = new Blob(
       [localStorage[LOCAL_STORAGE_KEY]],
       {type: "text/plain;charset=utf-8"});
@@ -37,7 +52,19 @@ Files.memory = {}
     writeToLocalStorage()
   }
 
+  Files.loadFromLocalStorage = function() {
+    loadInMemoryFilesFromLocalStorage()
+  }
+
+  Files.initProject = function(filename, content) {
+    Files.memory = {}
+    writeToLocalStorage()
+    Files.set(filename, content)
+    writeToLocalStorage()
+  }
+
   Files[Symbol.iterator] = function *() {
+    if (!Files.diskLoaded()) return
     for (let name in Files.memory) {
       yield name
     }
@@ -108,7 +135,7 @@ Files.memory = {}
   }
 
   function loadInMemoryFilesFromLocalStorage() {
-    Files.loadFromString(localStorage['files'])
+    Files.memory = parseFiles(localStorage['files'])
   }
 
   function generateUniqueString() {

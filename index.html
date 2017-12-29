@@ -24,12 +24,24 @@ body, input, textarea {
   background-color: #aff;
 }
 
-#editor-pane {
+#editor-pane,
+#disk-drive-pane {
   position: absolute;
   top: 0;
   left: 0;
   width: 512px;
   height: 600px;
+}
+
+#disk-drive-pane {
+  text-align: center;
+  padding-top: 250px;
+}
+
+#new-project, #load-disk {
+  font-size: 16px;
+  margin: 5px;
+  display: inline-block;
 }
 
 #cli-pane {
@@ -47,6 +59,10 @@ body, input, textarea {
   top: 20px;
   border: 1px solid gray;
   resize: none;
+}
+
+button#eject {
+  float: right;
 }
 
 .ace_gutter-cell.ace_warning,
@@ -157,9 +173,14 @@ input#command-line {
   </head>
   <body>
     <div id="container">
-      <div id="editor-pane">
+      <div id="disk-drive-pane" style="display:none;">
+        <button id="load-disk">Load Project from Disk</button><br/>
+        <button id="new-project">New Project</button>
+      </div>
+      <div id="editor-pane" style="display:none;">
         <select id="file-selector"></select>
         <button id="new-file">New File</button>
+        <button id="eject">Eject</button>
         <div id="editor"></div>
       </div>
       <input type="file" id="import">
@@ -192,6 +213,11 @@ navigator.serviceWorker.register('./caching-service-worker.js', {
 
 const cliInput = document.getElementById('command-line')
 const importFileInput = document.getElementById('import')
+const ejectButton = document.getElementById('eject')
+const editorPane = document.getElementById('editor-pane')
+const diskDrivePane = document.getElementById('disk-drive-pane')
+const loadDiskButton = document.getElementById('load-disk')
+const newProjectButton = document.getElementById('new-project')
 
 const windowPrompt = window.prompt.bind(window)
 const windowConfirm = window.confirm.bind(window)
@@ -235,8 +261,31 @@ importFileInput.addEventListener('change', function(event) {
   function handleFileContents() {
     let text = reader.result
     Files.loadFromString(text)
+    loadVariables(JSON.parse(Files.get('ProgramVariables') || '{}'))
     Editor.switchToFile('main.js')
+    showEditor()
   }
+})
+
+ejectButton.addEventListener('click', function() {
+  Files.writeToDisk()
+  Files.eject()
+  WindowRestorer()
+  editorPane.style.display = 'none'
+  diskDrivePane.style.display = 'block'
+})
+
+loadDiskButton.addEventListener('click', function() {
+  importFileInput.click()
+})
+
+newProjectButton.addEventListener('click', function() {
+  Files.initProject('main.js', `function* Main() {
+\tlet name = yield getUserInput('Enter your name.')
+\tlog('Hello, ' + name)
+}`)
+  showEditor()
+  Editor.switchToFile('main.js')
 })
 
 ////////////////////////////////////////////////////////////
@@ -310,9 +359,6 @@ function loadVariables(initialValues) {
     return typeof a === typeof b && toS.call(a) === toS.call(b)
   }
 }
-
-// load the globals from the saved JSON
-loadVariables(JSON.parse(Files.get('ProgramVariables') || '{}'))
 
 function getUserInput(prompt) {
   assertYielded('asked for user input')
@@ -516,6 +562,8 @@ function *RunProgram() {
 }
 
 function initUserProgram() {
+  if (!Files.diskLoaded()) return
+
   let code = [...Files]
     .filter(f => f.match(/\.js$/))
     .map(f => Files.get(f))
@@ -572,6 +620,53 @@ function logBadExceptions(error) {
     console.log(error)
   }
 }
+
+////////////////////////////////////////////////////////////
+// Initialization
+////////////////////////////////////////////////////////////
+
+function showEditor() {
+  editorPane.style.display = 'block'
+  diskDrivePane.style.display = 'none'
+}
+
+function showDiskDrive() {
+  editorPane.style.display = 'none'
+  diskDrivePane.style.display = 'block'
+}
+
+const realWindow = window
+const WindowRestorer = (function() {
+  const originalWindowProperties = {}
+  for (let prop in realWindow) {
+    if (realWindow.hasOwnProperty(prop)) {
+      originalWindowProperties[prop] = realWindow.prop
+    }
+  }
+
+  return restore
+
+  function restore() {
+    for (let prop in realWindow) {
+      if (Object.prototype.hasOwnProperty.call(realWindow, prop)) {
+        if (!(prop in originalWindowProperties)) {
+          delete realWindow[prop]
+        }
+      }
+    }
+  }
+})();
+
+if (Files.diskLoaded()) {
+  // load the globals from the saved JSON
+  loadVariables(JSON.parse(Files.get('ProgramVariables') || '{}'))
+  showEditor()
+  Files.loadFromLocalStorage()
+  Editor.switchToFile('main.js')
+} else {
+  showDiskDrive()
+}
+
     </script>
   </body>
 </html>
