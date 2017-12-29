@@ -65,10 +65,6 @@ function alert(text) {
   log(text, '#f40')
 }
 
-function cutLog() {
-  // deprecated
-}
-
 function logPushPage(title) {
   let page = document.createElement('div')
   page.classList.add('page')

@@ -462,7 +462,6 @@ function *Main__() {
   logPushPage()
 
   inform('Loading MOSS, the Magical Operating System Simulacrum')
-  cutLog()
 
   const ALLOWED_COMMANDS = [
     'help', 'js', 'load', 'run', 'save'
@@ -514,8 +513,6 @@ load    Load a file from your computer
       Files.writeToDisk()
       break parseInput
     }
-
-    cutLog()
   }}
 }
 
@@ -527,7 +524,6 @@ function *JSPrompt() {
   yield *repeatUntilCanceled(getAndRunScript)
 
   function *getAndRunScript() {
-    cutLog()
     let script = echo(yield getUserInput())
     evalAndPrintResult(script)
   }
@@ -558,7 +554,6 @@ function *RunProgram() {
 
   save()
   inform("Program completed.")
-  cutLog()
 }
 
 function initUserProgram() {
