@@ -32,8 +32,8 @@ var version = 'Grove II Cache v3',
 
       // JS
       './caching-service-worker.js',
-      './editor.js'
-      './files.js'
+      './editor.js',
+      './files.js',
       './fileSaver.js',
       './log.js'
     ];
