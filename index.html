@@ -193,8 +193,11 @@ input#command-line {
       </div>
     </div>
 
-    <script type="text/javascript" src="./ace.js"></script>
     <script type="text/javascript" src="./fileSaver.js"></script>
+    <script type="text/javascript" src="./ace.js"></script>
+    <script type="text/javascript" src="./poppins.js"></script>
+    <script type="text/javascript" src="./injector.js"></script>
+    <script type="text/javascript" src="./localStorage.js"></script>
     <script type="text/javascript" src="./files.js"></script>
     <script type="text/javascript" src="./editor.js"></script>
     <script type="text/javascript" src="./log.js"></script>
@@ -260,7 +263,7 @@ importFileInput.addEventListener('change', function(event) {
 
   function handleFileContents() {
     let text = reader.result
-    Files.loadFromString(text)
+    Files.load(text)
     loadVariables(JSON.parse(Files.get('ProgramVariables') || '{}'))
     Editor.switchToFile('main.js')
     showEditor()
@@ -268,8 +271,8 @@ importFileInput.addEventListener('change', function(event) {
 })
 
 ejectButton.addEventListener('click', function() {
-  Files.writeToDisk()
-  Files.eject()
+  saveAs(blobbify(Files.diskImage()), 'save.txt')
+  Files.clear()
   WindowRestorer()
   editorPane.style.display = 'none'
   diskDrivePane.style.display = 'block'
@@ -280,7 +283,8 @@ loadDiskButton.addEventListener('click', function() {
 })
 
 newProjectButton.addEventListener('click', function() {
-  Files.initProject('main.js', `function* Main() {
+  Files.clear()
+  Files.set('main.js', `function* Main() {
 \tlet name = yield getUserInput('Enter your name.')
 \tlog('Hello, ' + name)
 }`)
@@ -415,6 +419,10 @@ function addHelpText(fn, text) {
 // UTILITY FUNCTIONS
 ////////////////////////////////////////////////////////////
 
+function blobbify(string) {
+  return new Blob([string], {type: "text/plain;charset=utf-8"});
+}
+
 function globalsAsJson() {
   let forJson = {}
   for (let key in userGlobalNames) {
@@ -510,7 +518,7 @@ load    Load a file from your computer
       continue prompt
 
       case 'save':
-      Files.writeToDisk()
+      alert('save is deprecated. Use the eject button instead.')
       break parseInput
     }
   }}
@@ -557,9 +565,9 @@ function *RunProgram() {
 }
 
 function initUserProgram() {
-  if (!Files.diskLoaded()) return
+  if (!Files.any()) return
 
-  let code = [...Files]
+  let code = Files.names()
     .filter(f => f.match(/\.js$/))
     .map(f => Files.get(f))
     .join(';')
@@ -652,11 +660,11 @@ const WindowRestorer = (function() {
   }
 })();
 
-if (Files.diskLoaded()) {
+window.Files = inject().Files
+if (Files.any()) {
   // load the globals from the saved JSON
   loadVariables(JSON.parse(Files.get('ProgramVariables') || '{}'))
   showEditor()
-  Files.loadFromLocalStorage()
   Editor.switchToFile('main.js')
 } else {
   showDiskDrive()

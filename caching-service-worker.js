@@ -25,7 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-var version = 'Grove II Cache v4',
+var version = 'Grove II Cache v5',
     filesToCache = [
       // HTML
       './index.html',
@@ -35,7 +35,10 @@ var version = 'Grove II Cache v4',
       './editor.js',
       './files.js',
       './fileSaver.js',
-      './log.js'
+      './injector.js',
+      './localStorage.js',
+      './log.js',
+      './poppins.js'
     ];
 
 console.debug('Service worker cache version is ', version)

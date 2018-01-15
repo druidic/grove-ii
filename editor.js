@@ -1,4 +1,5 @@
 const Editor = {}
+window.Files = inject().Files
 
 Editor.fileSelector = document.getElementById('file-selector')
 Editor.newFileButton = document.getElementById('new-file')
@@ -35,7 +36,7 @@ Editor.switchToFile = function(filename) {
   Editor.currentlyEditingFile = filename
   Editor.editor.setValue(Files.get(filename))
   Editor.editor.clearSelection()
-  syncSelectOptions([...Files], filename, Editor.fileSelector)
+  syncSelectOptions(Files.names(), filename, Editor.fileSelector)
   Editor.editor.getSession().setMode(filename.match(/\.js$/) ? 'ace/mode/javascript' : 'ace/mode/text');
 }
 
@@ -45,7 +46,7 @@ Editor.newFileButton.addEventListener('click', function() {
     Files.set(name, '')
     Editor.currentlyEditingFile = name
     Editor.editor.setValue('')
-    syncSelectOptions([...Files], name, Editor.fileSelector)
+    syncSelectOptions(Files.names(), name, Editor.fileSelector)
     Editor.editor.getSession().setMode(name.match(/\.js$/) ? 'ace/mode/javascript' : 'ace/mode/text');
   }
 })
@@ -94,7 +95,3 @@ function updateLinterOptions() {
     }])
   }
 }
-
-;(function() {
-
-})();

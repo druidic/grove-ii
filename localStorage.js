@@ -1,0 +1,3 @@
+inject('localStorage', () => {
+  return localStorage
+})

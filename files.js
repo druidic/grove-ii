@@ -1,159 +1,97 @@
-const Files = {}
-Files.memory = {}
+inject('randomId', () => {
+  const chars
+    = 'abcdefghijklmnopqrstuvwxyz'
+    + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    + '1234567890'
+    + '_-'
 
-;(function() {
-  const fileBoundary = '\n--- {} - DO NOT EDIT THIS LINE ---\n'
-  const LOCAL_STORAGE_KEY = 'files'
+  return randomId
 
-  //////////////////////////////////////////////////////////
-  // public functions
-  //////////////////////////////////////////////////////////
-
-  Files.eject = function() {
-    Files.memory = null
-    localStorage[LOCAL_STORAGE_KEY] = ''
-  }
-
-  Files.diskLoaded = function() {
-    return !!localStorage[LOCAL_STORAGE_KEY]
-  }
-
-  Files.set = function(name, content) {
-    if (!Files.diskLoaded()) throw 'No filesystem loaded'
-
-    if (!Files.memory[name]) {
-      Files.memory[name] = {metadata: {filename: name}}
-    }
-    Files.memory[name].content = content
-    writeToLocalStorage()
-  }
-
-  Files.get = function(name) {
-    if (!Files.diskLoaded()) throw 'No filesystem loaded 2 '
-
-    if (Files.memory[name]) {
-      return Files.memory[name].content
-    }
-    return ''
-  }
-
-  Files.writeToDisk = function() {
-    if (!Files.diskLoaded()) throw 'No filesystem loaded3 '
-
-    var blob = new Blob(
-      [localStorage[LOCAL_STORAGE_KEY]],
-      {type: "text/plain;charset=utf-8"});
-
-    saveAs(blob, 'save.txt')
-  }
-
-  Files.loadFromString = function(s) {
-    Files.memory = parseFiles(s)
-    writeToLocalStorage()
-  }
-
-  Files.loadFromLocalStorage = function() {
-    loadInMemoryFilesFromLocalStorage()
-  }
-
-  Files.initProject = function(filename, content) {
-    Files.memory = {}
-    writeToLocalStorage()
-    Files.set(filename, content)
-    writeToLocalStorage()
-  }
-
-  Files[Symbol.iterator] = function *() {
-    if (!Files.diskLoaded()) return
-    for (let name in Files.memory) {
-      yield name
-    }
-  }
-
-  //////////////////////////////////////////////////////////
-  // private functions
-  //////////////////////////////////////////////////////////
-
-  function writeToLocalStorage() {
-    localStorage[LOCAL_STORAGE_KEY] = serializeFiles(Files.memory)
-  }
-
-  function parseFiles(raw) {
-    if (!raw) return {}
-
-    let unique = raw.slice(0, 8)
-    let delimeter = fileBoundary.replace('{}', unique)
-    let parts = raw.slice(9).split(delimeter)
-    // each file has a pair of parts; a metadata section
-    // and the actual file content.
-    let files = {}
-    if (parts.length % 2 !== 0) {
-      console.error('Corrupt file.')
-      return {}
-    }
-    for (let i = 0; parts[i]; i += 2) {
-      let metadata = JSON.parse(parts[i])
-      let content = parts[i + 1]
-      files[metadata.filename] = {
-        metadata,
-        content
-      }
-    }
-    return files
-  }
-
-  function serializeFiles(files) {
-    let parts = []
-    for (let filename in files) {
-      let file = files[filename]
-      parts.push(JSON.stringify(file.metadata))
-      parts.push(file.content)
-    }
-
-    retry: for (;;) {
-
-    let unique = generateUniqueString()
-
-    if (parts.some(p => p.includes(unique))) {
-      continue retry;
-    }
-
-    let delimiter = fileBoundary.replace('{}', unique)
-    return unique + '\n' + parts.join(delimiter)
-  }}
-
-  function readFilesFromDisk(fileHandle) {
-    let reader = new FileReader()
-    reader.addEventListener('load', handleFileContents)
-    reader.readAsText(fileHandle)
-
-    function handleFileContents() {
-      let text = reader.result
-      localStorage['files'] = text
-      loadInMemoryFilesFromLocalStorage()
-    }
-  }
-
-  function loadInMemoryFilesFromLocalStorage() {
-    Files.memory = parseFiles(localStorage['files'])
-  }
-
-  function generateUniqueString() {
-    let chars = '1234567890'
-      + 'abcdefghijklmnopqrstuvwxyz'
-      + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-      + '_-'
-
+  function randomId() {
     let unique = ''
     for (let i = 0; i < 8; i++) {
       unique += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     return unique
   }
+})
 
-  //////////////////////////////////////////////////////////
-  // initialization
-  //////////////////////////////////////////////////////////
+inject('Files', ({localStorage, randomId}) => {
+  return {
+    get,
+    set,
+    destroy,
+    clear,
+    names,
+    diskImage,
+    load,
+    any,
+  }
 
-  loadInMemoryFilesFromLocalStorage()
-})();
+  function get(name) {
+    return localStorage['file:' + name] || ''
+  }
+
+  function set(name, content) {
+    localStorage['file:' + name] = content
+  }
+
+  function destroy(name) {
+    delete localStorage['file:' + name]
+  }
+
+  function clear() {
+    names().forEach(destroy)
+  }
+
+  function names() {
+    return Object.keys(localStorage)
+      .filter(key => key.indexOf('file:') === 0)
+      .map(key => key.slice('file:'.length))
+  }
+
+  function diskImage() {
+    let divider = randomDivider()
+    return divider
+      + names()
+        .map(name => name + divider + get(name))
+        .join(divider)
+  }
+
+  function load(diskImage) {
+    divider = diskImage.slice(0, randomDivider().length)
+
+    pipe(diskImage.split(divider),
+      drop(1),
+      pairs)
+      .forEach(pair => set(pair[0], pair[1]))
+  }
+
+  function any() {
+    return !!names().length
+  }
+
+  /* PRIVATE FUNCTIONS */
+
+  function randomDivider() {
+    return '\n' + randomId() + ' --- DO NOT EDIT THIS LINE\n'
+  }
+
+  function pipe(obj, ...fns) {
+    let val = obj
+    fns.forEach(fn => val = fn(val))
+    return val
+  }
+
+  function drop(n) {
+    return array => array.slice(n)
+  }
+
+  function pairs(array) {
+    let result = []
+    for (let i = 0; i < array.length; i += 2) {
+      result.push([array[i], array[i + 1]])
+    }
+    return result
+  }
+})
