@@ -1,8 +1,8 @@
 # Grove II
 
-The Grove II is a complete, self-contained development
+The [Grove II]() is a complete, self-contained development
 environment for *imperative* and [*Faux-O*](https://www.youtube.com/watch?v=yTkzNHF6rMs) programming
-in JavaScript.
+in JavaScript. You can use it here: https://druidic.github.io/grove-ii/.
 
 In plain English: you can write and run code in the browser,
 and it's more or less like programming on a state-of-the-art
@@ -11,17 +11,17 @@ get to write JavaScript instead of BASIC or C or FORTRAN.
 
 It currently supports:
 
-- A friendly (okay, actually, it's pretty grumpy) system
-  shell.
+- A simple, user-friendly command line interface with some
+  novel creature comforts.
 - Efficient, native emulation of synchronous operations,
   like `sleep()` and blocking I/O.
 - Persistence of both code and program state in
   `localStorage`.
+- Exporting code and data to files so programs can be
+  shared or moved between browsers.
 
 Planned features:
 
-- Exporting code and data to files so programs can be
-  shared or moved between browsers.
 - A graphical mode using HTML5 Canvas.
 
 ## Synchronous Programming
@@ -36,7 +36,7 @@ Here's an example of a Grove II program. And yes, it
 does what you'd expect.
 
 ```javascript
-program.main = function *() {
+function* Main() {
   while (true) {
     log('HELLO, WORLD')
     yield sleep(1)
