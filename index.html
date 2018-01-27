@@ -648,7 +648,6 @@ const WindowRestorer = (function() {
   }
 })();
 
-window.Files = inject().Files
 if (Files.any()) {
   // load the globals from the saved JSON
   loadVariables(JSON.parse(Files.get('ProgramVariables') || '{}'))

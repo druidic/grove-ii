@@ -17,6 +17,8 @@ inject('randomId', () => {
 })
 
 inject('Files', ({localStorage, randomId}) => {
+  let observer = () => {}
+
   return {
     get,
     set,
@@ -26,18 +28,22 @@ inject('Files', ({localStorage, randomId}) => {
     diskImage,
     load,
     any,
+    exists,
+    subscribe,
   }
 
   function get(name) {
     return localStorage['file:' + name] || ''
   }
 
-  function set(name, content) {
-    localStorage['file:' + name] = content
+  function set(filename, content) {
+    localStorage['file:' + filename] = content
+    observer({filename})
   }
 
-  function destroy(name) {
-    delete localStorage['file:' + name]
+  function destroy(filename) {
+    delete localStorage['file:' + filename]
+    observer({filename})
   }
 
   function clear() {
@@ -69,6 +75,14 @@ inject('Files', ({localStorage, randomId}) => {
 
   function any() {
     return !!names().length
+  }
+
+  function exists(filename) {
+    return 'file:' + filename in localStorage
+  }
+
+  function subscribe(fn) {
+    observer = fn
   }
 
   /* PRIVATE FUNCTIONS */

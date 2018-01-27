@@ -50,6 +50,14 @@ describe('Files', () => {
     expect(Files.any()).toBe(false)
   })
 
+  it('knows if a file exists', function() {
+    expect(Files.exists('foo')).toBe(false)
+    Files.set('foo', '')
+    expect(Files.exists('foo')).toBe(true)
+    Files.destroy('foo')
+    expect(Files.exists('foo')).toBe(false)
+  })
+
   let diskImage = `
 12345678 --- DO NOT EDIT THIS LINE
 foo
@@ -73,5 +81,33 @@ this is bar`
     expect(Files.get('foo')).toBe('this is foo')
     expect(Files.get('bar')).toBe('this is bar')
     expect(Files.get('i do not exist')).toBe('')
+  })
+
+  // =======================================================
+  // OBSERVER TESTS
+  // =======================================================
+
+  it('notifies an observer when a file is created', function() {
+    let observer = jasmine.createSpy('observer')
+
+    Files.subscribe(observer)
+    expect(observer).not.toHaveBeenCalled()
+
+    Files.set('foo', 'bar')
+
+    expect(observer).toHaveBeenCalledWith({filename: 'foo'})
+  })
+
+  it('notifies an observer when a file is destroyed', function() {
+    let observer = jasmine.createSpy('observer')
+
+    Files.set('foo', 'bar')
+
+    Files.subscribe(observer)
+    expect(observer).not.toHaveBeenCalled()
+
+    Files.destroy('foo')
+
+    expect(observer).toHaveBeenCalledWith({filename: 'foo'})
   })
 })

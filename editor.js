@@ -95,3 +95,21 @@ function updateLinterOptions() {
     }])
   }
 }
+
+Files.subscribe(function({filename}) {
+  let cur = Editor.currentlyEditingFile
+
+  if (Files.exists(cur)) {
+    if (filename === cur) {
+      // our current file was edited
+      Editor.refresh()
+    } else {
+      // something else changed; just refresh the select
+      // since files may have been added or deleted
+      syncSelectOptions(Files.names(), cur, Editor.fileSelector)
+    }
+  } else {
+    // our current file was deleted
+    Editor.switchToFile('main.js')
+  }
+})
