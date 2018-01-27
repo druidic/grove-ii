@@ -25,7 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-var version = 'Grove II Cache v7',
+var version = 'Grove II Cache v8',
     filesToCache = [
       // HTML
       './index.html',
