@@ -54,6 +54,10 @@ Editor.newFileButton.addEventListener('click', function() {
 Editor.switchToFile('main.js')
 
 Editor.refresh = function() {
+  if (Editor.editor.getValue() === Files.get(Editor.currentlyEditingFile)) {
+    // nothing changed
+    return
+  }
   let selection = Editor.editor.getSelectionRange()
   Editor.switchToFile(Editor.currentlyEditingFile)
   Editor.editor.getSelection().setSelectionRange(selection)
