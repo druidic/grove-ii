@@ -472,7 +472,7 @@ function *Main__() {
   inform('Loading MOSS, the Magical Operating System Simulacrum')
 
   const ALLOWED_COMMANDS = [
-    'help', 'js', 'load', 'run', 'save'
+    'help', 'js', 'run'
   ]
 
   yield sleep(0.4)
@@ -488,10 +488,6 @@ help    Show this text again
 js      Use JavaScript interactively
 run     Run the function named 'Main' as an interactive
         program
-save    Save your work to a file, e.g. to move it to
-        another computer (work is saved in the browser
-        on every change)
-load    Load a file from your computer
 `
     inform(HELP_TEXT)
 
@@ -509,17 +505,9 @@ load    Load a file from your computer
       yield *mode(JSPrompt)
       continue prompt
 
-      case 'load':
-      importFileInput.click()
-      break parseInput
-
       case 'run':
       yield *RunProgram()
       continue prompt
-
-      case 'save':
-      alert('save is deprecated. Use the eject button instead.')
-      break parseInput
     }
   }}
 }
