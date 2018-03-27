@@ -1,22 +1,22 @@
-inject('randomId', () => {
+const randomId = function() {
   const chars
     = 'abcdefghijklmnopqrstuvwxyz'
     + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     + '1234567890'
     + '_-'
 
-  return randomId
+  return _randomId
 
-  function randomId() {
+  function _randomId() {
     let unique = ''
     for (let i = 0; i < 8; i++) {
       unique += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     return unique
   }
-})
+}
 
-inject('Files', ({localStorage, randomId}) => {
+Files = (function() {
   let observer = () => {}
 
   return {
@@ -108,4 +108,4 @@ inject('Files', ({localStorage, randomId}) => {
     }
     return result
   }
-})
+})();

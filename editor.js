@@ -1,5 +1,4 @@
 const Editor = {}
-window.Files = inject().Files
 
 Editor.fileSelector = document.getElementById('file-selector')
 Editor.newFileButton = document.getElementById('new-file')

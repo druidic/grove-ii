@@ -1,3 +1,0 @@
-inject('localStorage', () => {
-  return localStorage
-})
