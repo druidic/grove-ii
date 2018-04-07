@@ -202,7 +202,7 @@ importFileInput.addEventListener('change', function(event) {
   }
 })
 
-let app
+let app = NullBard()
 document.body.addEventListener('keydown', event => {
   if (event.target !== document.body) return
   if (app) app.receiveKeydown(event)
@@ -211,6 +211,7 @@ document.body.addEventListener('keydown', event => {
 function run() {
   window.view = View()
   view.hideScreen()
+  app.stop()
   app = App(window)
 }
 
