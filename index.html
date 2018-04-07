@@ -282,49 +282,52 @@ loadDiskButton.addEventListener('click', function() {
 
 newProjectButton.addEventListener('click', function() {
   Files.clear()
-  Files.set('main.js', `function *init() {
-	yield Echo
-}
+  Files.set('main.js', `define({
+	*init() {
+		yield Echo
+	},
 
-function *Echo() {
-	let line = yield getLine()
-	yield log(line)
-	yield retry()
-}
+	*Echo() {
+		let line = yield getLine()
+		yield log(line)
+		yield retry()
+	},
 
-function getLine() {
-  return function *() {
-    let entered = ''
+	getLine() {
+		return function *() {
+			let entered = ''
 
-    yield startInputDisplay(state => {
-      return [
-        '> ' + entered + '_'
-      ]
-    })
-    yield function*() {
-      let c = yield waitForChar()
-      if (c === 'Enter') { return }
-      if (c === 'Backspace') {
-        entered = dropLast(1, entered)
-      }
-      if (c.length === 1) { entered += c }
-      yield retry()
-    }
-    return entered
-  }
-}
+			yield startInputDisplay(state => {
+				return [
+					'> ' + entered + '_'
+				]
+			})
+			yield function*() {
+				let c = yield waitForChar()
+				if (c === 'Enter') { return }
+				if (c === 'Backspace') {
+					entered = dropLast(1, entered)
+				}
+				if (c.length === 1) { entered += c }
+				yield retry()
+			}
+			return entered
+		}
+	},
 
-function dropLast(n, array) {
-  if (n > array.length) { return [] }
-  return array.slice(0, array.length - n)
-}
+	dropLast(n, array) {
+		if (n > array.length) { return [] }
+		return array.slice(0, array.length - n)
+	},
 
-function getStateType() {
-	return {}
-}
+	getStateType() {
+		return {}
+	}
+})
 `)
   showEditor()
   Editor.switchToFile('main.js')
+  initUserProgram()
 })
 
 function save(jsonable) {
@@ -342,14 +345,19 @@ function load(object) {
   return object
 }
 
+function define(definitions) {
+  for (let name in definitions) {
+    if (has(name, definitions)) {
+      window[name] = definitions[name]
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////
 // START OF MAIN PROGRAM
 ////////////////////////////////////////////////////////////
 
-let programRunning = false
-let programGlobal = {}
 function initUserProgram() {
-  programRunning = false
   if (!Files.any()) return
 
   let code = Files.names()
@@ -357,22 +365,7 @@ function initUserProgram() {
     .map(f => Files.get(f))
     .join(';')
 
-  code += ';' +
-    functionNames(code)
-      .map(putFunctionOnWindow)
-      .join(';')
-
-  programRunning = true
   new Function(code)()
-
-  function putFunctionOnWindow(fname) {
-    return `if (typeof ${fname} === 'function') window['${fname}'] = ${fname}`
-  }
-
-  function functionNames(code) {
-    return code.match(/function\s*\*?\s*[a-zA-Z0-9_]+/g)
-      .map(match => match.replace(/function\s*\*?\s*/, ''))
-  }
 }
 
 ////////////////////////////////////////////////////////////
