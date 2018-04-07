@@ -98,6 +98,15 @@ button#run {
   z-index: 1000;
 }
 
+#test-failures {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  padding: 0 6px;
+  background-color: #f88;
+}
+
 #logs {
   height: 70px;
   border-bottom: 1px solid black;
@@ -144,6 +153,7 @@ button#run {
       <input type="file" id="import">
       <div id="cli-pane">
         <div id="terminal">
+          <div id="test-failures"></div>
           <button id="run">Run</button>
           <div id="logs"><div id="log-items"></div></div>
           <div id="screen"></div>
@@ -179,6 +189,7 @@ const loadDiskButton = document.getElementById('load-disk')
 const newProjectButton = document.getElementById('new-project')
 const terminal = document.getElementById('terminal')
 const runButton = document.getElementById('run')
+const testFailures = document.getElementById('test-failures')
 
 const windowPrompt = window.prompt.bind(window)
 
@@ -206,6 +217,7 @@ document.body.addEventListener('keydown', event => {
 function run() {
   window.view = View()
   view.hideScreen()
+  testFailures.innerText = ''
   app.stop()
   app = App(window)
 }
@@ -251,7 +263,7 @@ function View() {
 }
 
 function viewTestResults(results) {
-  terminal.innerText =
+  testFailures.innerText =
     'TESTS FAILED:\n' +
     results.failures.join('\n')
 }
