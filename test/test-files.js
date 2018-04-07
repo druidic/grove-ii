@@ -3,9 +3,8 @@ describe('Files', () => {
   let Files
   beforeEach(() => {
     localStorage = {}
+    Files = makeFiles(localStorage, randomId)
     function randomId() { return '12345678' }
-
-    Files = inject({localStorage, randomId}).Files
   })
 
   it('reads files from localStorage', function() {

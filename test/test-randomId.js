@@ -1,6 +1,4 @@
 describe('randomId', function() {
-  const {randomId} = inject()
-
   it('always returns an 8-character string', function() {
     expect(randomId().length).toBe(8)
   })

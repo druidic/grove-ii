@@ -1,4 +1,4 @@
-const randomId = function() {
+const randomId = (function() {
   const chars
     = 'abcdefghijklmnopqrstuvwxyz'
     + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -14,9 +14,9 @@ const randomId = function() {
     }
     return unique
   }
-}
+})()
 
-Files = (function() {
+function makeFiles(localStorage, randomId) {
   let observer = () => {}
 
   return {
@@ -108,4 +108,8 @@ Files = (function() {
     }
     return result
   }
-})();
+}
+
+if (typeof localStorage !== 'undefined') {
+  Files = makeFiles(localStorage, randomId)
+}
