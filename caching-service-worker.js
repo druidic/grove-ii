@@ -25,7 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-var version = 'Grove II Cache v8',
+var version = 'Grove II Cache v9',
     filesToCache = [
       // HTML
       './index.html',
@@ -36,11 +36,8 @@ var version = 'Grove II Cache v8',
       './editor.js',
       './files.js',
       './fileSaver.js',
-      './injector.js',
-      './localStorage.js',
       './log.js',
       './mode-javascript.js',
-      './poppins.js'
       './theme-xcode.js',
       './window-restorer.js',
       './worker-javascript.js'
