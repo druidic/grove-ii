@@ -21,7 +21,7 @@ body, input, textarea {
   position: absolute;
   width: 1024px;
   height: 600px;
-  background-color: #aff;
+  background-color: #ddd;
 }
 
 #editor-pane,
@@ -76,27 +76,55 @@ input#import {
   top: -999px;
 }
 
-.inset-border {
-  border-top: 3px solid gray;
-  border-left: 3px solid gray;
-  border-right: 3px solid lightgray;
-  border-bottom: 3px solid lightgray;
+#terminal {
+  background-color: #fff;
+  color: #000;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  padding: 24px 6px;
 }
 
-#log {
+#terminal > div {
+  font-family: monospace;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+button#run {
   position: absolute;
-  height: 550px;
-  width: 512px;
-  background-color: #aaa;
+  top: 6px;
+  left: 6px;
+  z-index: 1000;
+}
+
+#logs {
+  height: 70px;
+  border-bottom: 1px solid black;
+  position: relative;
 }
 
 #log-items {
+  width: 100%;
   position: absolute;
   bottom: 0;
-  width: 506px;
-  max-height: 550px;
+  max-height: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
+}
+
+#screen {
+  height: 280px;
+  border-bottom: 1px solid black;
+}
+
+#input {
+  height: 70px;
+}
+
+button#run {
+  position: absolute;
+  top: 6px;
+  left: 6px;
 }
 
     </style>
@@ -115,12 +143,13 @@ input#import {
       </div>
       <input type="file" id="import">
       <div id="cli-pane">
-        <div id="log" class="inset-border">
-          <div id="log-items">
-          </div>
+        <div id="terminal">
+          <button id="run">Run</button>
+          <div id="logs"><div id="log-items"></div></div>
+          <div id="screen"></div>
+          <div id="input"></div>
         </div>
         <canvas id="canvas"/>
-        <input id="command-line" class="inset-border" type="text">
       </div>
     </div>
 
@@ -128,6 +157,7 @@ input#import {
     <script type="text/javascript" src="./ace.js"></script>
     <script type="text/javascript" src="./files.js"></script>
     <script type="text/javascript" src="./editor.js"></script>
+    <script type="text/javascript" src="./verse.js"></script>
     <script type="text/javascript">
 
 navigator.serviceWorker.register('./caching-service-worker.js', {
@@ -141,13 +171,14 @@ navigator.serviceWorker.register('./caching-service-worker.js', {
     </script>
     <script type="text/javascript">
 
-const cliInput = document.getElementById('command-line')
 const importFileInput = document.getElementById('import')
 const ejectButton = document.getElementById('eject')
 const editorPane = document.getElementById('editor-pane')
 const diskDrivePane = document.getElementById('disk-drive-pane')
 const loadDiskButton = document.getElementById('load-disk')
 const newProjectButton = document.getElementById('new-project')
+const terminal = document.getElementById('terminal')
+const runButton = document.getElementById('run')
 
 const windowPrompt = window.prompt.bind(window)
 const windowConfirm = window.confirm.bind(window)
@@ -171,6 +202,66 @@ importFileInput.addEventListener('change', function(event) {
   }
 })
 
+let app
+document.body.addEventListener('keydown', event => {
+  if (app) app.receiveKeydown(event)
+})
+
+function run() {
+  window.view = View()
+  view.hideScreen()
+  app = App(window)
+}
+
+function View() {
+  let $logContainer = document.getElementById('logs')
+  let $logs = document.getElementById('log-items')
+  let $screen = document.getElementById('screen')
+  let $input = document.getElementById('input')
+
+  return {
+    log,
+    screen,
+    input,
+    hideScreen,
+  }
+
+  function log(message) {
+    let newLogElement = document.createElement('div')
+    newLogElement.innerText = message
+    $logs.appendChild(newLogElement)
+    $logs.scrollTop = 999999
+  }
+
+  function screen(lines) {
+    $screen.innerText = lines.join('\n')
+    showScreen()
+  }
+
+  function hideScreen() {
+    $screen.style.height = 0
+    $logContainer.style.height = '350px'
+  }
+
+  function showScreen() {
+    $screen.style.height = '280px'
+    $logContainer.style.height = '70px'
+  }
+
+  function input(lines) {
+    $input.innerText = lines.join('\n')
+  }
+}
+
+function viewTestResults(results) {
+  terminal.innerText =
+    'TESTS FAILED:\n' +
+    results.failures.join('\n')
+}
+
+
+runButton.addEventListener('click', run)
+
 ejectButton.addEventListener('click', function() {
   saveAs(blobbify(Files.diskImage()), 'save.txt')
   Files.clear()
@@ -189,24 +280,45 @@ loadDiskButton.addEventListener('click', function() {
 
 newProjectButton.addEventListener('click', function() {
   Files.clear()
-  Files.set('main.js', `function handleProgramStart(global) {
-  load(global)
+  Files.set('main.js', `function *init() {
+	yield Echo
 }
 
-function handleProgramExit(global) {
-  save(global)
+function *Echo() {
+	let line = yield getLine()
+	yield log(line)
+	yield retry()
 }
 
-function handleKeyPress(event, global) {
+function getLine() {
+  return function *() {
+    let entered = ''
 
+    yield startInputDisplay(state => {
+      return [
+        '> ' + entered + '_'
+      ]
+    })
+    yield function*() {
+      let c = yield waitForChar()
+      if (c === 'Enter') { return }
+      if (c === 'Backspace') {
+        entered = dropLast(1, entered)
+      }
+      if (c.length === 1) { entered += c }
+      yield retry()
+    }
+    return entered
+  }
 }
 
-function handleKeyRelease(event, global) {
-
+function dropLast(n, array) {
+  if (n > array.length) { return [] }
+  return array.slice(0, array.length - n)
 }
 
-function handleFrame(global) {
-
+function getStateType() {
+	return {}
 }
 `)
   showEditor()
@@ -235,7 +347,6 @@ function load(object) {
 let programRunning = false
 let programGlobal = {}
 function initUserProgram() {
-  if (window.handleProgramExit) handleProgramExit(programGlobal)
   programRunning = false
   if (!Files.any()) return
 
@@ -251,7 +362,6 @@ function initUserProgram() {
 
   programRunning = true
   new Function(code)()
-  handleProgramStart(programGlobal)
 
   function putFunctionOnWindow(fname) {
     return `if (typeof ${fname} === 'function') window['${fname}'] = ${fname}`
@@ -306,6 +416,8 @@ if (Files.any()) {
 } else {
   showDiskDrive()
 }
+
+initUserProgram()
 
     </script>
   </body>
