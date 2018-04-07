@@ -181,12 +181,6 @@ const terminal = document.getElementById('terminal')
 const runButton = document.getElementById('run')
 
 const windowPrompt = window.prompt.bind(window)
-const windowConfirm = window.confirm.bind(window)
-const windowAlert = window.alert.bind(window)
-
-const CANCELED_MSG = 'Canceled by ESC.'
-
-let validTokensForInput = null
 
 importFileInput.addEventListener('change', function(event) {
   let input = event.target
@@ -261,7 +255,6 @@ function viewTestResults(results) {
     results.failures.join('\n')
 }
 
-
 runButton.addEventListener('click', run)
 
 ejectButton.addEventListener('click', function() {
@@ -329,21 +322,6 @@ newProjectButton.addEventListener('click', function() {
   Editor.switchToFile('main.js')
   initUserProgram()
 })
-
-function save(jsonable) {
-  Files.set('ProgramVariables', JSON.stringify(jsonable, null, 2))
-  Editor.refresh()
-}
-
-function load(object) {
-  try {
-    Object.assign(object, JSON.parse(Files.get('ProgramVariables')))
-  } catch (e) {
-    console.error('Failed to load variables: ', e)
-  }
-
-  return object
-}
 
 function define(definitions) {
   for (let name in definitions) {
