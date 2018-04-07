@@ -204,6 +204,7 @@ importFileInput.addEventListener('change', function(event) {
 
 let app
 document.body.addEventListener('keydown', event => {
+  if (event.target !== document.body) return
   if (app) app.receiveKeydown(event)
 })
 
